@@ -18,8 +18,10 @@ class IDE:
 
         self.texto = scrolledtext.ScrolledText(frame_superior, wrap="word", width=50, height=10)
         self.texto.pack(side="left", expand=True, fill="both")
-        self.texto.bind("<KeyRelease>", self.actualizar_numero_lineas)
-        self.texto.bind("<KeyRelease>", self.resaltar_sintaxis)
+        self.texto.bind("<KeyRelease>", self.on_key_release)
+        self.texto.bind("<MouseWheel>", self.on_scroll)
+        self.texto.bind("<Button-4>", self.on_scroll)  # For Linux with wheel scroll
+        self.texto.bind("<Button-5>", self.on_scroll)  # For Linux with wheel scroll
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
@@ -63,7 +65,7 @@ class IDE:
         self.crear_menu()
         self.crear_botones_acceso_rapido()
         self.actualizar_numero_lineas()
-        self.resaltar_sintaxis(None)
+        self.resaltar_sintaxis()
 
     def crear_menu(self):
         menubar = tk.Menu(self.root)
@@ -135,7 +137,7 @@ class IDE:
                 contenido = f.read()
                 self.texto.delete("1.0", tk.END)
                 self.texto.insert(tk.END, contenido)
-                self.resaltar_sintaxis(None)
+                self.resaltar_sintaxis()
                 self.actualizar_numero_lineas()
 
     def guardar_archivo(self):
@@ -168,6 +170,7 @@ class IDE:
 
     def mostrar_arbol_sintactico(self, texto):
         self.error_texto.delete("1.0", tk.END)
+        self.limpiar_arbol_sintactico()
         try:
             resultado, errores = analizar_sintactico(texto)
             if resultado:
@@ -178,9 +181,11 @@ class IDE:
         except SyntaxError as e:
             self.error_texto.insert(tk.END, str(e))
 
-    def insertar_arbol_sintactico(self, arbol):
+    def limpiar_arbol_sintactico(self):
         for item in self.texto_sintactico.get_children():
             self.texto_sintactico.delete(item)
+
+    def insertar_arbol_sintactico(self, arbol):
         self.insertar_nodo("", arbol)
         self.texto_sintactico.item(self.texto_sintactico.get_children(), open=True)
 
@@ -199,16 +204,18 @@ class IDE:
         self.lineas.config(state='normal')
         self.lineas.delete('1.0', 'end')
 
-        i = self.texto.index('@0,0')
-        while True:
-            dline = self.texto.dlineinfo(i)
-            if dline is None:
-                break
-            linenum = str(i).split('.')[0]
-            self.lineas.insert(tk.END, linenum + '\n')
-            i = self.texto.index(f'{i}+1line')
+        num_lineas = int(self.texto.index('end-1c').split('.')[0])
+        for i in range(1, num_lineas + 1):
+            self.lineas.insert(tk.END, f'{i}\n')
 
         self.lineas.config(state='disabled')
+
+    def on_key_release(self, event):
+        self.actualizar_numero_lineas()
+        self.resaltar_sintaxis()
+
+    def on_scroll(self, event):
+        self.actualizar_numero_lineas()
 
 if __name__ == "__main__":
     root = tk.Tk()
