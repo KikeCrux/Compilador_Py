@@ -1,0 +1,44 @@
+program {}
+
+program {
+    int x, y;
+    write x;
+    write y;
+}
+
+program {
+    int x, y;
+    x=0; // comentario 1
+    y=4; /* comentario 2 */
+    while (y>=0) {
+        if(x<y) then{
+        y=y-1;
+        } fi
+    }
+}
+
+program {
+    int x, y;
+    float a, b;
+    bool c;
+    c = false;
+    x=5; // comentario 1
+    y=4; /* comentario 2 */
+    a=0.0;
+    b=3.0;
+    do {
+        if(x<y and y>=0) then{
+            c=true;
+            } else {
+            x=x-2;
+            a=a*x+b;
+            y=y-1;
+        }
+        fi
+        while(a==3 or x==y){
+            write a;
+            a=a+1;
+            x=a-y;
+        }
+    } until(c == true);
+}
