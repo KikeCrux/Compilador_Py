@@ -169,23 +169,23 @@ def p_empty(p):
     '''empty :'''
     pass
 
+errores = []
+
 def p_error(p):
     if p:
-        raise SyntaxError(f"Error de sintaxis en '{p.value}', línea {p.lineno}")
+        errores.append(f"Error de sintaxis en '{p.value}'")
+        parser.errok()
     else:
-        raise SyntaxError("Error de sintaxis en EOF")
+        errores.append("Error de sintaxis en EOF")
 
 # Construir el parser
 parser = yacc.yacc()
 
 def analizar_sintactico(texto):
+    global errores
     errores = []
-    try:
-        resultado = parser.parse(texto)
-        return resultado, errores
-    except SyntaxError as e:
-        errores.append(str(e))
-        return None, errores
+    resultado = parser.parse(texto)
+    return resultado, errores
 
 def formatear_arbol(arbol, nivel=0):
     resultado = ""

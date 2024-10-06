@@ -42,3 +42,110 @@ program {
         }
     } until(c == true);
 }
+
+Más ejemplos
+
+program {
+    int a, b, c;
+    float d, e, f;
+    bool g;
+    g = true;
+    a = 10;
+    b = 20;
+    d = 5.5;
+    e = 3.3;
+    do {
+        if(a > b and b <= 30) then {
+            g = false;
+        } else {
+            a = a - 1;
+            f = d * e;
+            b = b + 2;
+        }
+        fi
+        while(d != 10 or f < 20){
+            write f;
+            f = f + 2.5;
+            e = e - 1.1;
+        }
+    } until(g == false);
+}
+
+program {
+    int m, n;
+    float x, y;
+    bool z;
+    z = true;
+    m = 15;
+    n = 25;
+    x = 2.5;
+    y = 1.5;
+    do {
+        if(m == n and x <= y) then {
+            z = false;
+        } else {
+            m = m + 3;
+            x = y * x + n;
+            n = n - 2;
+        }
+        fi
+        while(x >= 5 or m == n){
+            write m;
+            x = x / 1.1;
+            n = n + 1;
+        }
+    } until(z == false);
+}
+
+
+program {
+    int i, j, k;
+    float p, q;
+    bool flag;
+    flag = false;
+    i = 8;
+    j = 12;
+    p = 4.4;
+    q = 2.2;
+    do {
+        if(i != j and j > 5) then {
+            flag = true;
+        } else {
+            i = i + 2;
+            p = p - q;
+            j = j - 1;
+        }
+        fi
+        while(p <= 10 or i != j){
+            write i;
+            p = p * 1.5;
+            q = q + 0.5;
+        }
+    } until(flag == true);
+}
+
+program {
+    int x, y, z;
+    float alpha, beta;
+    bool condition;
+    condition = true;
+    x = 7;
+    y = 3;
+    alpha = 1.1;
+    beta = 0.9;
+    do {
+        if(x >= y and y < 10) then {
+            condition = false;
+        } else {
+            x = x * 2;
+            alpha = alpha + beta;
+            y = y - 1;
+        }
+        fi
+        while(alpha < 5 or x > y){
+            write alpha;
+            beta = beta * 1.2;
+            y = y + 2;
+        }
+    } until(condition == false);
+}

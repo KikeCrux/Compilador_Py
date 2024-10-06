@@ -20,8 +20,8 @@ class IDE:
         self.texto.pack(side="left", expand=True, fill="both")
         self.texto.bind("<KeyRelease>", self.on_key_release)
         self.texto.bind("<MouseWheel>", self.on_scroll)
-        self.texto.bind("<Button-4>", self.on_scroll)  # For Linux with wheel scroll
-        self.texto.bind("<Button-5>", self.on_scroll)  # For Linux with wheel scroll
+        self.texto.bind("<Button-4>", self.on_scroll) 
+        self.texto.bind("<Button-5>", self.on_scroll)  
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
@@ -115,6 +115,7 @@ class IDE:
         self.texto.tag_configure("reservada", foreground="blue")
         self.texto.tag_configure("string", foreground="red")
         self.texto.tag_configure("comentario", foreground="green")
+        self.texto.tag_configure("error", background="yellow")
 
         texto = self.texto.get("1.0", tk.END)
 
@@ -171,6 +172,7 @@ class IDE:
     def mostrar_arbol_sintactico(self, texto):
         self.error_texto.delete("1.0", tk.END)
         self.limpiar_arbol_sintactico()
+        self.texto.tag_remove("error", "1.0", tk.END)
         try:
             resultado, errores = analizar_sintactico(texto)
             if resultado:
@@ -178,6 +180,11 @@ class IDE:
             if errores:
                 for error in errores:
                     self.error_texto.insert(tk.END, error + "\n")
+                    # Resaltar la línea del error
+                    match = re.search(r'línea (\d+)', error)
+                    if match:
+                        linea_error = int(match.group(1))
+                        self.texto.tag_add("error", f"{linea_error}.0", f"{linea_error}.end")
         except SyntaxError as e:
             self.error_texto.insert(tk.END, str(e))
 
