@@ -120,8 +120,14 @@ def t_error(t):
 # Construir el lexer
 lexer = lex.lex()
 
+# Función para reemplazar espacios no separadores (U+00A0) por espacios normales
+def limpiar_espacios_invisibles(texto):
+    return texto.replace('\u00A0', ' ')
+
+# Función que realiza el análisis léxico después de limpiar el texto
 def analizar_lexico(texto):
-    lexer.lineno = 1  # Resetear el número de línea al iniciar el análisis
+    texto = limpiar_espacios_invisibles(texto)
+    lexer.lineno = 1
     lexer.input(texto)
     tokens = []
     while True:

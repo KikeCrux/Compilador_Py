@@ -3,6 +3,7 @@ from tkinter import filedialog, scrolledtext, ttk
 import re
 from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
+from analizador_semantico import analizar_semantico
 
 class IDE:
     def __init__(self, root):
@@ -20,8 +21,8 @@ class IDE:
         self.texto.pack(side="left", expand=True, fill="both")
         self.texto.bind("<KeyRelease>", self.on_key_release)
         self.texto.bind("<MouseWheel>", self.on_scroll)
-        self.texto.bind("<Button-4>", self.on_scroll) 
-        self.texto.bind("<Button-5>", self.on_scroll)  
+        self.texto.bind("<Button-4>", self.on_scroll)
+        self.texto.bind("<Button-5>", self.on_scroll)
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
@@ -36,8 +37,9 @@ class IDE:
         self.texto_sintactico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_sintactico, text="Sintactico")
 
+        # TreeView para el análisis semántico
         self.panel_semantico = tk.Frame(self.pestanas)
-        self.texto_semantico = scrolledtext.ScrolledText(self.panel_semantico, wrap="word", width=30, height=10)
+        self.texto_semantico = ttk.Treeview(self.panel_semantico)
         self.texto_semantico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_semantico, text="Semantico")
 
@@ -110,7 +112,7 @@ class IDE:
         ]
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
-        patron_comentario = r'(//.*|/\*[\s\S]*?\*/)'
+        patron_comentario = r'(//.*|/\*[\s\S]*?\*/)' 
 
         self.texto.tag_configure("reservada", foreground="blue")
         self.texto.tag_configure("string", foreground="red")
@@ -157,6 +159,7 @@ class IDE:
         texto = self.texto.get("1.0", tk.END)
         self.mostrar_tokens_lexicos(texto)
         self.mostrar_arbol_sintactico(texto)
+        self.mostrar_arbol_semantico(texto)
 
     def mostrar_tokens_lexicos(self, texto):
         self.texto_lexico.delete("1.0", tk.END)
@@ -180,13 +183,41 @@ class IDE:
             if errores:
                 for error in errores:
                     self.error_texto.insert(tk.END, error + "\n")
-                    # Resaltar la línea del error
                     match = re.search(r'línea (\d+)', error)
                     if match:
                         linea_error = int(match.group(1))
                         self.texto.tag_add("error", f"{linea_error}.0", f"{linea_error}.end")
         except SyntaxError as e:
             self.error_texto.insert(tk.END, str(e))
+
+    def mostrar_arbol_semantico(self, texto):
+        self.limpiar_arbol_semantico()
+
+        resultado, _ = analizar_sintactico(texto)
+        if resultado:
+            resultado_semantico = analizar_semantico(resultado)
+
+            if resultado_semantico and resultado_semantico[0] != 'error':
+                self.insertar_arbol_semantico("", resultado_semantico)
+            else:
+                self.texto_semantico.insert("", "end", text=f"Error en el análisis semántico: {resultado_semantico[1]}")
+        else:
+            self.texto_semantico.insert("", "end", text="No se pudo generar un árbol semántico.")
+
+    def limpiar_arbol_semantico(self):
+        for item in self.texto_semantico.get_children():
+            self.texto_semantico.delete(item)
+
+    def insertar_arbol_semantico(self, parent, nodo):
+        if isinstance(nodo, tuple):
+            item = self.texto_semantico.insert(parent, "end", text=f"{nodo[0]}: {nodo[1]}", open=True)
+            for subnodo in nodo[2:]:
+                self.insertar_arbol_semantico(item, subnodo)
+        elif isinstance(nodo, list):
+            for subnodo in nodo:
+                self.insertar_arbol_semantico(parent, subnodo)
+        else:
+            self.texto_semantico.insert(parent, "end", text=str(nodo))
 
     def limpiar_arbol_sintactico(self):
         for item in self.texto_sintactico.get_children():
@@ -205,7 +236,7 @@ class IDE:
             for subnodo in nodo:
                 self.insertar_nodo(parent, subnodo)
         else:
-            self.texto_sintactico.insert(parent, "end", text=str(nodo), open=True)
+            self.texto_sintactico.insert(parent, "end", text=str(nodo))
 
     def actualizar_numero_lineas(self, event=None):
         self.lineas.config(state='normal')
