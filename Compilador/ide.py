@@ -5,6 +5,7 @@ from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
 from analizador_semantico import analizar_semantico
 
+
 class IDE:
     def __init__(self, root):
         self.root = root

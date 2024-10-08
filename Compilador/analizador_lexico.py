@@ -19,7 +19,8 @@ reserved = {
     'false': 'FALSE',
     'and': 'AND',
     'or': 'OR',
-    'then': 'THEN'
+    'then': 'THEN',
+    'break': 'BREAK'
 }
 
 # Definir los tokens del lexer
