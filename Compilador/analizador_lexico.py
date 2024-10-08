@@ -2,14 +2,11 @@ import ply.lex as lex
 
 # Definir las palabras reservadas
 reserved = {
-    'program': 'PROGRAM',
+    'main': 'MAIN',
     'bool': 'BOOL',
     'int': 'INT',
     'float': 'FLOAT',
     'char': 'CHAR',
-    'byte': 'BYTE',
-    'long': 'LONG',
-    'double': 'DOUBLE',
     'if': 'IF',
     'else': 'ELSE',
     'fi': 'FI',
@@ -18,26 +15,14 @@ reserved = {
     'until': 'UNTIL',
     'read': 'READ',
     'write': 'WRITE',
-    'break': 'BREAK',
-    'try': 'TRY',
-    'return': 'RETURN',
-    'void': 'VOID',
-    'public': 'PUBLIC',
-    'protected': 'PROTECTED',
-    'private': 'PRIVATE',
-    'class': 'CLASS',
-    'abstract': 'ABSTRACT',
-    'interface': 'INTERFACE',
-    'this': 'THIS',
-    'friend': 'FRIEND',
     'true': 'TRUE',
     'false': 'FALSE',
-    'then': 'THEN',
     'and': 'AND',
-    'or': 'OR'
+    'or': 'OR',
+    'then': 'THEN'
 }
 
-# Definir las reglas del lexer
+# Definir los tokens del lexer
 tokens = (
     'ID',
     'NUMBER',
@@ -58,14 +43,10 @@ tokens = (
     'GE',
     'EQ',
     'NE',
-    'NOT',
-    'PLUS_EQUALS',
-    'MINUS_EQUALS',
-    'STRING',
-    'COMMENT'
+    'NOT'
 ) + tuple(reserved.values())
 
-# Expresiones regulares para los tokens
+# Expresiones regulares para los tokens simples
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_TIMES = r'\*'
@@ -84,37 +65,30 @@ t_GE = r'>='
 t_EQ = r'=='
 t_NE = r'!='
 t_NOT = r'!'
-t_PLUS_EQUALS = r'\+='
-t_MINUS_EQUALS = r'-='
-t_STRING = r'\"([^\\\n]|(\\.))*?\"'
 
-# Manejo de comentarios
-def t_COMMENT(t):
-    r'(//.*)|(/\*(.|\n)*?\*/)'
-    t.lexer.lineno += t.value.count('\n')
-    pass
-
+# Manejar identificadores y palabras reservadas
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
-    t.type = reserved.get(t.value, 'ID')  # Check for reserved words
+    t.type = reserved.get(t.value, 'ID')  # Chequeo de palabras reservadas
     return t
 
+# Manejar números (enteros y flotantes)
 def t_NUMBER(t):
     r'\d+(\.\d+)?'
     t.value = float(t.value) if '.' in t.value else int(t.value)
     return t
 
-# Ignorar espacios, tabulaciones y nuevas líneas
+# Ignorar espacios y tabulaciones
 t_ignore = ' \t'
 
-# Función para manejar nuevas líneas y actualizar el número de línea
+# Manejar nuevas líneas
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
 
-# Manejar errores de tokens
+# Manejar errores de caracteres ilegales
 def t_error(t):
-    print("Caracter ilegal '%s'" % t.value[0])
+    print(f"Caracter ilegal '{t.value[0]}' en la línea {t.lexer.lineno}")
     t.lexer.skip(1)
 
 # Construir el lexer

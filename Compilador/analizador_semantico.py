@@ -5,7 +5,7 @@ def verificar_tipo(nodo):
         print(f"Procesando nodo: {nodo}")
 
         # Si el nodo es un programa
-        if nodo[0] == 'programa':
+        if nodo[0] == 'main':
             # Procesamos declaraciones
             for decl in nodo[1]:
                 resultado_decl = verificar_tipo(decl)
@@ -16,7 +16,7 @@ def verificar_tipo(nodo):
                 resultado_sent = verificar_tipo(sent)
                 if resultado_sent[0] == 'error':
                     return resultado_sent
-            return ('programa', 'ok', nodo)
+            return ('main', 'ok', nodo)
 
         # Si el nodo es una declaración de variable
         if nodo[0] == 'decl':

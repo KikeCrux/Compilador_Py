@@ -224,19 +224,34 @@ class IDE:
             self.texto_sintactico.delete(item)
 
     def insertar_arbol_sintactico(self, arbol):
+        # Insertar el nodo raíz y expandirlo
         self.insertar_nodo("", arbol)
-        self.texto_sintactico.item(self.texto_sintactico.get_children(), open=True)
 
     def insertar_nodo(self, parent, nodo):
         if isinstance(nodo, tuple):
-            item = self.texto_sintactico.insert(parent, "end", text=str(nodo[0]), open=True)
-            for subnodo in nodo[1:]:
-                self.insertar_nodo(item, subnodo)
+            # Si es una declaración (decl), mostramos el tipo en una línea y los identificadores en la misma línea
+            if nodo[0] == 'decl':
+                item = self.texto_sintactico.insert(parent, "end", text=f"{nodo[0]}")
+                tipo_item = self.texto_sintactico.insert(item, "end", text=f"{nodo[1]} {' '.join(nodo[2])}")
+                self.texto_sintactico.item(tipo_item, open=True)  # Expande el nodo
+                self.texto_sintactico.item(item, open=True)
+            # Si es una asignación (assign), mostramos la variable en la misma línea y el valor en una nueva línea
+            elif nodo[0] == 'assign':
+                item = self.texto_sintactico.insert(parent, "end", text=f"{nodo[0]}")
+                variable_item = self.texto_sintactico.insert(item, "end", text=f"{nodo[1]} = {nodo[2]}")
+                self.texto_sintactico.item(variable_item, open=True)
+                self.texto_sintactico.item(item, open=True)  # Expande el nodo de la asignación
+            else:
+                item = self.texto_sintactico.insert(parent, "end", text=str(nodo[0]), open=True)
+                for subnodo in nodo[1:]:
+                    self.insertar_nodo(item, subnodo)
+                self.texto_sintactico.item(item, open=True)  # Expande el nodo actual
         elif isinstance(nodo, list):
             for subnodo in nodo:
                 self.insertar_nodo(parent, subnodo)
         else:
-            self.texto_sintactico.insert(parent, "end", text=str(nodo))
+            item = self.texto_sintactico.insert(parent, "end", text=str(nodo))  # Insertar nodos simples (hojas)
+            self.texto_sintactico.item(item, open=True)  # Asegurar que cada nodo hoja se expanda también
 
     def actualizar_numero_lineas(self, event=None):
         self.lineas.config(state='normal')

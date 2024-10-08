@@ -17,7 +17,7 @@ program {
     }
 }
 
-program {
+main {
     int x, y;
     float a, b;
     bool c;

@@ -1,11 +1,11 @@
 import ply.yacc as yacc
-from analizador_lexico import tokens
+from analizador_lexico import tokens, lexer
 
 # Definir la gramática
 
 def p_programa(p):
-    '''programa : PROGRAM LBRACE lista_decl lista_sent RBRACE'''
-    p[0] = ('programa', p[3], p[4])
+    '''programa : MAIN LBRACE lista_decl lista_sent RBRACE'''
+    p[0] = ('main', p[3], p[4])
 
 def p_lista_decl(p):
     '''lista_decl : lista_decl decl
@@ -17,7 +17,7 @@ def p_lista_decl(p):
 
 def p_decl(p):
     '''decl : tipo lista_id SEMICOLON'''
-    p[0] = ('decl', p[1], p[2])
+    p[0] = ('decl', p[1], ' '.join(p[2]))
 
 def p_tipo(p):
     '''tipo : INT
@@ -169,14 +169,22 @@ def p_empty(p):
     '''empty :'''
     pass
 
+# Mejorar la detección de errores de sintaxis
 errores = []
 
 def p_error(p):
     if p:
-        errores.append(f"Error de sintaxis en '{p.value}'")
-        parser.errok()
+        columna = encontrar_columna(p)
+        errores.append(f"Error de sintaxis en '{p.value}' en la línea {p.lineno}, columna {columna}")
+        parser.errok()  # Recuperar de error para seguir analizando
     else:
-        errores.append("Error de sintaxis en EOF")
+        errores.append("Error de sintaxis en EOF (fin del archivo)")
+
+def encontrar_columna(token):
+    last_cr = lexer.lexdata.rfind('\n', 0, token.lexpos)
+    if last_cr < 0:
+        last_cr = 0
+    return token.lexpos - last_cr + 1
 
 # Construir el parser
 parser = yacc.yacc()
