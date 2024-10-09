@@ -79,6 +79,16 @@ def t_NUMBER(t):
     t.value = float(t.value) if '.' in t.value else int(t.value)
     return t
 
+# Ignorar comentarios de una sola línea (// ...)
+def t_COMMENT_SINGLELINE(t):
+    r'//.*'
+    pass  # Ignorar el comentario
+
+# Ignorar comentarios de múltiples líneas (/* ... */)
+def t_COMMENT_MULTILINE(t):
+    r'/\*[\s\S]*?\*/'
+    pass  # Ignorar el comentario
+
 # Ignorar espacios y tabulaciones
 t_ignore = ' \t'
 
