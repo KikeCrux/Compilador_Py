@@ -133,3 +133,18 @@ def analizar_semantico(arbol):
         return resultado
     except Exception as e:
         return ('error', str(e))
+
+# Función para imprimir la tabla de símbolos
+def imprimir_tabla_simbolos():
+    print("\n=====================")
+    print("     TABLA DE SÍMBOLOS")
+    print("=====================")
+    for variable, tipo in tabla_simbolos.items():
+        print(f"Variable: {variable} -> Tipo: {tipo}")
+    print("=====================\n")
+
+# Llamar a la función después de procesar el árbol
+# Ejemplo de cómo llamar a la función
+arbol = ('main', [('decl', 'int', ['x', 'y', 'z'])], [('assign', 'x', 10), ('assign', 'y', 20)])
+analizar_semantico(arbol)
+imprimir_tabla_simbolos()
