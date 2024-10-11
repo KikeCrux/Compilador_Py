@@ -6,20 +6,21 @@ def verificar_tipo(nodo):
 
         # Si el nodo es un programa
         if nodo[0] == 'main':
-            # Procesamos declaraciones
             declaraciones = []
+            sentencias = []
+
             for decl in nodo[1]:
                 resultado_decl = verificar_tipo(decl)
                 declaraciones.append(resultado_decl)
                 if resultado_decl[0] == 'error':
                     declaraciones.append(('error', f"Error en la declaración {decl}"))
-            # Procesamos sentencias
-            sentencias = []
+
             for sent in nodo[2]:
                 resultado_sent = verificar_tipo(sent)
                 sentencias.append(resultado_sent)
                 if resultado_sent[0] == 'error':
                     sentencias.append(('error', f"Error en la sentencia {sent}"))
+
             return ('main', 'ok', declaraciones, sentencias)
 
         # Si el nodo es una declaración de variable
@@ -72,8 +73,8 @@ def verificar_tipo(nodo):
             condicion = verificar_tipo(nodo[1])
             if condicion[1] != 'bool':
                 return ('if_else', 'error', "Condición en 'if' debe ser booleana.", condicion)
-            bloque_then = verificar_tipo(nodo[2])
-            bloque_else = verificar_tipo(nodo[3])
+            bloque_then = verificar_tipo(nodo[2])  # Procesar el bloque dentro del "then"
+            bloque_else = verificar_tipo(nodo[3])  # Procesar el bloque dentro del "else"
             return ('if_else', 'bool', bloque_then, bloque_else)
 
         # Si es un ciclo while
@@ -81,13 +82,13 @@ def verificar_tipo(nodo):
             condicion = verificar_tipo(nodo[1])
             if condicion[1] != 'bool':
                 return ('while', 'error', "Condición en 'while' debe ser booleana.", condicion)
-            cuerpo = verificar_tipo(nodo[2])
+            cuerpo = verificar_tipo(nodo[2])  # Procesar el cuerpo del "while"
             return ('while', 'bool', cuerpo)
 
         # Si es un ciclo do-while
         elif nodo[0] == 'do_until':
-            cuerpo = verificar_tipo(nodo[1])
-            condicion = verificar_tipo(nodo[2])
+            cuerpo = verificar_tipo(nodo[1])  # Procesar el cuerpo del "do"
+            condicion = verificar_tipo(nodo[2])  # Verificar la condición del "until"
             if condicion[1] != 'bool':
                 return ('do_until', 'error', "Condición en 'do_until' debe ser booleana.", cuerpo, condicion)
             return ('do_until', 'bloque', cuerpo, condicion)
@@ -134,17 +135,3 @@ def analizar_semantico(arbol):
     except Exception as e:
         return ('error', str(e))
 
-# Función para imprimir la tabla de símbolos
-def imprimir_tabla_simbolos():
-    print("\n=====================")
-    print("     TABLA DE SÍMBOLOS")
-    print("=====================")
-    for variable, tipo in tabla_simbolos.items():
-        print(f"Variable: {variable} -> Tipo: {tipo}")
-    print("=====================\n")
-
-# Llamar a la función después de procesar el árbol
-# Ejemplo de cómo llamar a la función
-arbol = ('main', [('decl', 'int', ['x', 'y', 'z'])], [('assign', 'x', 10), ('assign', 'y', 20)])
-analizar_semantico(arbol)
-imprimir_tabla_simbolos()
