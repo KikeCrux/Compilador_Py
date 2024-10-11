@@ -17,7 +17,7 @@ def p_lista_decl(p):
 
 def p_decl(p):
     '''decl : tipo lista_id SEMICOLON'''
-    p[0] = ('decl', p[1], ' '.join(p[2]))
+    p[0] = ('decl', p[1], p[2])
 
 def p_tipo(p):
     '''tipo : INT
@@ -50,14 +50,14 @@ def p_sent(p):
             | bloque
             | sent_assign
             | BREAK SEMICOLON'''
-    if len(p) == 3:
+    if len(p) == 3 and p[1] == 'BREAK':
         p[0] = ('break',)
     else:
         p[0] = p[1]
 
 def p_sent_if(p):
-    '''sent_if : IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
-               | IF LPAREN exp_bool RPAREN THEN bloque FI'''
+    '''sent_if : IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+               | IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON'''
     if len(p) == 10:
         p[0] = ('if_else', p[3], p[6], p[8])
     else:
