@@ -3,13 +3,16 @@ from tkinter import filedialog, scrolledtext, ttk
 import re
 from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
-from analizador_semantico import analizar_semantico
+from analizador_semantico import analizar_semantico, construir_tabla_simbolos
 
 
 class IDE:
     def __init__(self, root):
         self.root = root
         self.root.title("Compilador chafa")
+
+        # Inicializar la tabla de símbolos como un diccionario vacío
+        self.tabla_simbolos = {}
 
         frame_superior = tk.Frame(self.root)
         frame_superior.pack(side="top", fill="both", expand=True)
@@ -18,31 +21,46 @@ class IDE:
                               background='lightgrey', state='disabled', wrap='none')
         self.lineas.pack(side="left", fill="y")
 
-        self.texto = scrolledtext.ScrolledText(frame_superior, wrap="word", width=50, height=10)
+        self.texto_scroll = tk.Scrollbar(frame_superior)
+        self.texto_scroll.pack(side="right", fill="y")
+
+        self.texto = tk.Text(frame_superior, wrap="none", yscrollcommand=self.sync_scroll, width=50, height=10)
         self.texto.pack(side="left", expand=True, fill="both")
         self.texto.bind("<KeyRelease>", self.on_key_release)
+
+        self.texto_scroll.config(command=self.texto.yview)
+        self.texto_scroll.config(command=self.sync_scroll)
+
+        # Sincronizar scroll con números de línea
+        self.texto_scroll.bind("<MouseWheel>", self.on_scroll)
         self.texto.bind("<MouseWheel>", self.on_scroll)
-        self.texto.bind("<Button-4>", self.on_scroll)
-        self.texto.bind("<Button-5>", self.on_scroll)
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
 
+        # Pestaña para el análisis léxico
         self.panel_lexico = tk.Frame(self.pestanas)
         self.texto_lexico = scrolledtext.ScrolledText(self.panel_lexico, wrap="word", width=30, height=10)
         self.texto_lexico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_lexico, text="Lexico")
 
+        # Pestaña para el análisis sintáctico
         self.panel_sintactico = tk.Frame(self.pestanas)
         self.texto_sintactico = ttk.Treeview(self.panel_sintactico)
         self.texto_sintactico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_sintactico, text="Sintactico")
 
-        # TreeView para el análisis semántico
+        # Pestaña para el análisis semántico
         self.panel_semantico = tk.Frame(self.pestanas)
         self.texto_semantico = ttk.Treeview(self.panel_semantico)
         self.texto_semantico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_semantico, text="Semantico")
+
+        # Pestaña para la tabla de símbolos
+        self.panel_simbolos = tk.Frame(self.pestanas)
+        self.texto_simbolos = scrolledtext.ScrolledText(self.panel_simbolos, wrap="word", width=30, height=10)
+        self.texto_simbolos.pack(expand=True, fill="both")
+        self.pestanas.add(self.panel_simbolos, text="Tabla de Símbolos")
 
         frame_inferior = tk.Frame(self.root)
         frame_inferior.pack(side="bottom", fill="both", expand=True)
@@ -160,6 +178,7 @@ class IDE:
         texto = self.texto.get("1.0", tk.END)
         self.mostrar_tokens_lexicos(texto)
         self.mostrar_arbol_sintactico(texto)
+        self.mostrar_tabla_simbolos(texto)
         self.mostrar_arbol_semantico(texto)
 
     def mostrar_tokens_lexicos(self, texto):
@@ -191,12 +210,27 @@ class IDE:
         except SyntaxError as e:
             self.error_texto.insert(tk.END, str(e))
 
+    def mostrar_tabla_simbolos(self, texto):
+        self.texto_simbolos.delete("1.0", tk.END)
+        self.limpiar_tabla_simbolos()
+
+        resultado, _ = analizar_sintactico(texto)
+        if resultado:
+            self.tabla_simbolos = {}
+            construir_tabla_simbolos(resultado, self.tabla_simbolos)  # Pasa el diccionario de símbolos
+            for var, tipo in self.tabla_simbolos.items():
+                self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {tipo}\n")
+        else:
+            self.texto_simbolos.insert(tk.END, "Error al construir la tabla de símbolos.")
+
     def mostrar_arbol_semantico(self, texto):
         self.limpiar_arbol_semantico()
 
         resultado, _ = analizar_sintactico(texto)
         if resultado:
-            resultado_semantico = analizar_semantico(resultado)
+            tabla_simbolos = {}
+            construir_tabla_simbolos(resultado, tabla_simbolos)  # Construir tabla de símbolos primero
+            resultado_semantico = analizar_semantico(resultado, tabla_simbolos)  # Pasar la tabla de símbolos
 
             if resultado_semantico and resultado_semantico[0] != 'error':
                 self.insertar_arbol_semantico("", resultado_semantico)
@@ -204,6 +238,7 @@ class IDE:
                 self.texto_semantico.insert("", "end", text=f"Error en el análisis semántico: {resultado_semantico[1]}")
         else:
             self.texto_semantico.insert("", "end", text="No se pudo generar un árbol semántico.")
+
 
     def limpiar_arbol_semantico(self):
         for item in self.texto_semantico.get_children():
@@ -224,35 +259,35 @@ class IDE:
         for item in self.texto_sintactico.get_children():
             self.texto_sintactico.delete(item)
 
+    def limpiar_tabla_simbolos(self):
+        self.texto_simbolos.delete('1.0', tk.END)
+
     def insertar_arbol_sintactico(self, arbol):
-        # Insertar el nodo raíz y expandirlo
         self.insertar_nodo("", arbol)
 
     def insertar_nodo(self, parent, nodo):
         if isinstance(nodo, tuple):
-            # Si es una declaración (decl), mostramos el tipo en una línea y los identificadores en la misma línea
             if nodo[0] == 'decl':
                 item = self.texto_sintactico.insert(parent, "end", text=f"{nodo[0]}")
                 tipo_item = self.texto_sintactico.insert(item, "end", text=f"{nodo[1]} {' '.join(nodo[2])}")
-                self.texto_sintactico.item(tipo_item, open=True)  # Expande el nodo
+                self.texto_sintactico.item(tipo_item, open=True)
                 self.texto_sintactico.item(item, open=True)
-            # Si es una asignación (assign), mostramos la variable en la misma línea y el valor en una nueva línea
             elif nodo[0] == 'assign':
                 item = self.texto_sintactico.insert(parent, "end", text=f"{nodo[0]}")
                 variable_item = self.texto_sintactico.insert(item, "end", text=f"{nodo[1]} = {nodo[2]}")
                 self.texto_sintactico.item(variable_item, open=True)
-                self.texto_sintactico.item(item, open=True)  # Expande el nodo de la asignación
+                self.texto_sintactico.item(item, open=True)
             else:
                 item = self.texto_sintactico.insert(parent, "end", text=str(nodo[0]), open=True)
                 for subnodo in nodo[1:]:
                     self.insertar_nodo(item, subnodo)
-                self.texto_sintactico.item(item, open=True)  # Expande el nodo actual
+                self.texto_sintactico.item(item, open=True)
         elif isinstance(nodo, list):
             for subnodo in nodo:
                 self.insertar_nodo(parent, subnodo)
         else:
-            item = self.texto_sintactico.insert(parent, "end", text=str(nodo))  # Insertar nodos simples (hojas)
-            self.texto_sintactico.item(item, open=True)  # Asegurar que cada nodo hoja se expanda también
+            item = self.texto_sintactico.insert(parent, "end", text=str(nodo))
+            self.texto_sintactico.item(item, open=True)
 
     def actualizar_numero_lineas(self, event=None):
         self.lineas.config(state='normal')
@@ -264,12 +299,18 @@ class IDE:
 
         self.lineas.config(state='disabled')
 
+    def sync_scroll(self, *args):
+        self.lineas.yview_moveto(args[0])
+        self.texto.yview_moveto(args[0])
+
+    def on_scroll(self, event):
+        self.texto.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        self.lineas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        return "break"
+
     def on_key_release(self, event):
         self.actualizar_numero_lineas()
         self.resaltar_sintaxis()
-
-    def on_scroll(self, event):
-        self.actualizar_numero_lineas()
 
 if __name__ == "__main__":
     root = tk.Tk()

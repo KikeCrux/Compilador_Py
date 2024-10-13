@@ -26,8 +26,8 @@ Rule 16    sent -> sent_write
 Rule 17    sent -> bloque
 Rule 18    sent -> sent_assign
 Rule 19    sent -> BREAK SEMICOLON
-Rule 20    sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
-Rule 21    sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI
+Rule 20    sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+Rule 21    sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON
 Rule 22    sent_while -> WHILE LPAREN exp_bool RPAREN bloque
 Rule 23    sent_do -> DO bloque UNTIL LPAREN exp_bool RPAREN SEMICOLON
 Rule 24    sent_read -> READ ID SEMICOLON
@@ -97,7 +97,7 @@ PLUS                 : 41
 RBRACE               : 1 26
 READ                 : 24
 RPAREN               : 20 21 22 23 52
-SEMICOLON            : 4 19 23 24 25 27
+SEMICOLON            : 4 19 20 21 23 24 25 27
 THEN                 : 20 21
 TIMES                : 44
 TRUE                 : 53
@@ -240,8 +240,8 @@ state 6
     (17) sent -> . bloque
     (18) sent -> . sent_assign
     (19) sent -> . BREAK SEMICOLON
-    (20) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
-    (21) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque FI
+    (20) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON
     (22) sent_while -> . WHILE LPAREN exp_bool RPAREN bloque
     (23) sent_do -> . DO bloque UNTIL LPAREN exp_bool RPAREN SEMICOLON
     (24) sent_read -> . READ ID SEMICOLON
@@ -488,8 +488,8 @@ state 23
 
 state 24
 
-    (20) sent_if -> IF . LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
-    (21) sent_if -> IF . LPAREN exp_bool RPAREN THEN bloque FI
+    (20) sent_if -> IF . LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF . LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON
 
     LPAREN          shift and go to state 34
 
@@ -597,8 +597,8 @@ state 32
     (17) sent -> . bloque
     (18) sent -> . sent_assign
     (19) sent -> . BREAK SEMICOLON
-    (20) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
-    (21) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque FI
+    (20) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> . IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON
     (22) sent_while -> . WHILE LPAREN exp_bool RPAREN bloque
     (23) sent_do -> . DO bloque UNTIL LPAREN exp_bool RPAREN SEMICOLON
     (24) sent_read -> . READ ID SEMICOLON
@@ -642,8 +642,8 @@ state 33
 
 state 34
 
-    (20) sent_if -> IF LPAREN . exp_bool RPAREN THEN bloque ELSE bloque FI
-    (21) sent_if -> IF LPAREN . exp_bool RPAREN THEN bloque FI
+    (20) sent_if -> IF LPAREN . exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF LPAREN . exp_bool RPAREN THEN bloque FI SEMICOLON
     (28) exp_bool -> . exp_bool OR comb
     (29) exp_bool -> . comb
     (30) comb -> . comb AND igualdad
@@ -1136,8 +1136,8 @@ state 56
 
 state 57
 
-    (20) sent_if -> IF LPAREN exp_bool . RPAREN THEN bloque ELSE bloque FI
-    (21) sent_if -> IF LPAREN exp_bool . RPAREN THEN bloque FI
+    (20) sent_if -> IF LPAREN exp_bool . RPAREN THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF LPAREN exp_bool . RPAREN THEN bloque FI SEMICOLON
     (28) exp_bool -> exp_bool . OR comb
 
     RPAREN          shift and go to state 80
@@ -1588,8 +1588,8 @@ state 79
 
 state 80
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN . THEN bloque ELSE bloque FI
-    (21) sent_if -> IF LPAREN exp_bool RPAREN . THEN bloque FI
+    (20) sent_if -> IF LPAREN exp_bool RPAREN . THEN bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF LPAREN exp_bool RPAREN . THEN bloque FI SEMICOLON
 
     THEN            shift and go to state 94
 
@@ -1833,8 +1833,8 @@ state 93
 
 state 94
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN . bloque ELSE bloque FI
-    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN . bloque FI
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN . bloque ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN . bloque FI SEMICOLON
     (26) bloque -> . LBRACE lista_sent RBRACE
 
     LBRACE          shift and go to state 13
@@ -1867,8 +1867,8 @@ state 96
 
 state 97
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque . ELSE bloque FI
-    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque . FI
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque . ELSE bloque FI SEMICOLON
+    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque . FI SEMICOLON
 
     ELSE            shift and go to state 99
     FI              shift and go to state 100
@@ -1883,7 +1883,7 @@ state 98
 
 state 99
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE . bloque FI
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE . bloque FI SEMICOLON
     (26) bloque -> . LBRACE lista_sent RBRACE
 
     LBRACE          shift and go to state 13
@@ -1892,17 +1892,9 @@ state 99
 
 state 100
 
-    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .
+    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI . SEMICOLON
 
-    RBRACE          reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    BREAK           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    IF              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    WHILE           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    DO              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    READ            reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    WRITE           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    LBRACE          reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
-    ID              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI .)
+    SEMICOLON       shift and go to state 103
 
 
 state 101
@@ -1922,22 +1914,44 @@ state 101
 
 state 102
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque . FI
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque . FI SEMICOLON
 
-    FI              shift and go to state 103
+    FI              shift and go to state 104
 
 
 state 103
 
-    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .
+    (21) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .
 
-    RBRACE          reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    BREAK           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    IF              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    WHILE           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    DO              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    READ            reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    WRITE           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    LBRACE          reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
-    ID              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI .)
+    RBRACE          reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    BREAK           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    IF              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    WHILE           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    DO              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    READ            reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    WRITE           reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    LBRACE          reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+    ID              reduce using rule 21 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON .)
+
+
+state 104
+
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI . SEMICOLON
+
+    SEMICOLON       shift and go to state 105
+
+
+state 105
+
+    (20) sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .
+
+    RBRACE          reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    BREAK           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    IF              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    WHILE           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    DO              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    READ            reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    WRITE           reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    LBRACE          reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
+    ID              reduce using rule 20 (sent_if -> IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON .)
 
