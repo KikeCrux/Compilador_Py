@@ -122,19 +122,24 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
             # Si es una condición if-else con bloques y delimitador fi
             elif nodo[0] == 'if_else':
                 condicion = verificar_tipo(nodo[1], tabla_simbolos, linea)
+
+                # Asegurarnos que la condición sea booleana
                 if condicion[1] != 'bool':
                     return ('if_else', 'error', "Condición en 'if' debe ser booleana.", condicion)
-                
-                # Procesar el bloque del 'then'
+
+                # Si la condición es True, procesar el bloque del 'then'
                 bloque_then = verificar_bloque(nodo[2], tabla_simbolos, linea)
+                if bloque_then[0] == 'error':
+                    return ('if_else', 'error', f"Error en el bloque 'then': {bloque_then}")
                 
-                # Verificar si hay un bloque 'else', usando el delimitador 'fi'
+                # Procesamos el bloque else (si existe)
                 if len(nodo) > 3:
                     bloque_else = verificar_bloque(nodo[3], tabla_simbolos, linea)
-                else:
-                    bloque_else = None
-
-                return ('if_else', 'bool', bloque_then, bloque_else)
+                    if bloque_else[0] == 'error':
+                        return ('if_else', 'error', f"Error en el bloque 'else': {bloque_else}")
+                    return ('if_else', 'bool', bloque_then, bloque_else)
+                
+                return ('if_else', 'bool', bloque_then)
 
             # Si es un ciclo while
             elif nodo[0] == 'while':
@@ -198,12 +203,19 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
 
 # Función para procesar bloques fragmentados
 def verificar_bloque(bloque, tabla_simbolos, linea):
+    # Asegurarnos de que estamos trabajando con una lista de sentencias
+    if not isinstance(bloque, list):
+        return ('error', "Bloque no reconocido o mal estructurado.")
+    
     sentencias = []
     for sent in bloque:
         resultado_sent = verificar_tipo(sent, tabla_simbolos, linea)
         sentencias.append(resultado_sent)
         if resultado_sent[0] == 'error':
             sentencias.append(('error', f"Error en la sentencia {sent}"))
+    
+    if len(sentencias) == 0:
+        return ('error', "Bloque vacío o no declarado.")
     return ('bloque', sentencias)
 
 # Función para mostrar el árbol semántico sin detenerse ante errores

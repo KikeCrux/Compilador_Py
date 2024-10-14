@@ -177,7 +177,15 @@ class IDE:
     def compilar_archivo(self):
         texto = self.texto.get("1.0", tk.END)
         self.mostrar_tokens_lexicos(texto)
+        arbol_sintactico, errores_sintacticos = analizar_sintactico(texto)
+        if errores_sintacticos:
+            self.error_texto.delete("1.0", tk.END)
+            for error in errores_sintacticos:
+                self.error_texto.insert(tk.END, error + "\n")
+            return
         self.mostrar_arbol_sintactico(texto)
+        self.tabla_simbolos.clear()
+        construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
         self.mostrar_tabla_simbolos(texto)
         self.mostrar_arbol_semantico(texto)
 
@@ -238,7 +246,6 @@ class IDE:
                 self.texto_semantico.insert("", "end", text=f"Error en el análisis semántico: {resultado_semantico[1]}")
         else:
             self.texto_semantico.insert("", "end", text="No se pudo generar un árbol semántico.")
-
 
     def limpiar_arbol_semantico(self):
         for item in self.texto_semantico.get_children():
