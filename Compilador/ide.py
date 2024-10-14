@@ -1,10 +1,10 @@
+# IDE
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 import re
 from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
 from analizador_semantico import analizar_semantico, construir_tabla_simbolos
-
 
 class IDE:
     def __init__(self, root):
@@ -183,10 +183,20 @@ class IDE:
             for error in errores_sintacticos:
                 self.error_texto.insert(tk.END, error + "\n")
             return
+        
         self.mostrar_arbol_sintactico(texto)
-        self.tabla_simbolos.clear()
+        
+        # Crear tabla de símbolos preliminar
+        self.tabla_simbolos = {}
         construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
-        self.mostrar_tabla_simbolos(texto)
+        
+        # Pasar la tabla de símbolos al análisis semántico
+        resultado_semantico = analizar_semantico(arbol_sintactico, self.tabla_simbolos)
+        
+        # Mostrar la tabla de símbolos
+        self.mostrar_tabla_simbolos()
+
+        # Mostrar resultados del análisis semántico
         self.mostrar_arbol_semantico(texto)
 
     def mostrar_tokens_lexicos(self, texto):
@@ -197,8 +207,8 @@ class IDE:
         for token in tokens:
             lexema = str(token.value)
             fila = token.lineno
-            columna = token.lexpos - texto.rfind('\n', 0, token.lexpos)
-            self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5} {columna:<10}\n")
+            # No se incluye la columna, ya que no es necesaria
+            self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5}\n")
 
     def mostrar_arbol_sintactico(self, texto):
         self.error_texto.delete("1.0", tk.END)
@@ -218,28 +228,16 @@ class IDE:
         except SyntaxError as e:
             self.error_texto.insert(tk.END, str(e))
 
-    def mostrar_tabla_simbolos(self, texto):
+    def mostrar_tabla_simbolos(self):
         self.texto_simbolos.delete("1.0", tk.END)
-        self.limpiar_tabla_simbolos()
-
-        resultado, _ = analizar_sintactico(texto)
-        if resultado:
-            self.tabla_simbolos = {}
-            construir_tabla_simbolos(resultado, self.tabla_simbolos)  # Pasa el diccionario de símbolos
-            for var, tipo in self.tabla_simbolos.items():
-                self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {tipo}\n")
-        else:
-            self.texto_simbolos.insert(tk.END, "Error al construir la tabla de símbolos.")
+        for var, info in self.tabla_simbolos.items():
+            self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {info['tipo']} | Línea(s): {info['lineas']}\n")
 
     def mostrar_arbol_semantico(self, texto):
         self.limpiar_arbol_semantico()
-
         resultado, _ = analizar_sintactico(texto)
         if resultado:
-            tabla_simbolos = {}
-            construir_tabla_simbolos(resultado, tabla_simbolos)  # Construir tabla de símbolos primero
-            resultado_semantico = analizar_semantico(resultado, tabla_simbolos)  # Pasar la tabla de símbolos
-
+            resultado_semantico = analizar_semantico(resultado, self.tabla_simbolos)
             if resultado_semantico and resultado_semantico[0] != 'error':
                 self.insertar_arbol_semantico("", resultado_semantico)
             else:
@@ -265,9 +263,6 @@ class IDE:
     def limpiar_arbol_sintactico(self):
         for item in self.texto_sintactico.get_children():
             self.texto_sintactico.delete(item)
-
-    def limpiar_tabla_simbolos(self):
-        self.texto_simbolos.delete('1.0', tk.END)
 
     def insertar_arbol_sintactico(self, arbol):
         self.insertar_nodo("", arbol)

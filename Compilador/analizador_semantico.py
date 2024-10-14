@@ -107,22 +107,34 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                 else:
                     return ('error', f"Error en la operación {nodo[0]}: tipos incompatibles {tipo_izq} y {tipo_der}")
 
-            # Si es una operación de signo
-            elif nodo[0] in ('+', '-'):
-                signo = nodo[0]
-                tipo_val = verificar_tipo(nodo[1], tabla_simbolos, linea)
+            # Si es una operación relacional (>, <, >=, <=, ==, !=)
+            elif nodo[0] in ('>', '<', '>=', '<=', '==', '!='):
+                izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
+                der = verificar_tipo(nodo[2], tabla_simbolos, linea)
 
-                # Aplicar promoción de signos
-                tipo_final = tipo_val[1]
+                if izq[0] == 'error' or der[0] == 'error':
+                    return ('error', f"Error en operandos de la relación {nodo[0]}")
 
-                valor = obtener_valor(tipo_val, tabla_simbolos)
-                if signo == '-':
-                    valor = -valor
+                valor_izq = obtener_valor(izq, tabla_simbolos)
+                valor_der = obtener_valor(der, tabla_simbolos)
 
-                return ('signo', f"{tipo_final}", valor)
+                if nodo[0] == '>':
+                    resultado = valor_izq > valor_der
+                elif nodo[0] == '<':
+                    resultado = valor_izq < valor_der
+                elif nodo[0] == '>=':
+                    resultado = valor_izq >= valor_der
+                elif nodo[0] == '<=':
+                    resultado = valor_izq <= valor_der
+                elif nodo[0] == '==':
+                    resultado = valor_izq == valor_der
+                elif nodo[0] == '!=':
+                    resultado = valor_izq != valor_der
+
+                return ('rel', 'bool', resultado)
 
             # Si es una condición if-else con bloques y delimitante fi
-            elif nodo[0] == 'if_else':
+            elif nodo[0] == 'if_else' or nodo[0] == 'if':
                 condicion = verificar_tipo(nodo[1], tabla_simbolos, linea)
 
                 # Evaluar la condición como booleana
@@ -131,6 +143,7 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
 
                 # Si la condición es True, procesar el bloque del 'then'
                 if obtener_valor(condicion, tabla_simbolos):
+                    print(f"Ejecutando bloque THEN, condicion: {obtener_valor(condicion, tabla_simbolos)}")
                     bloque_then = verificar_bloque(nodo[2], tabla_simbolos, linea)
                     if bloque_then[0] == 'error':
                         return ('if_else', 'error', f"Error en el bloque 'then': {bloque_then}")
@@ -138,6 +151,7 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                 else:
                     # Procesar el bloque else si existe
                     if len(nodo) > 3:
+                        print(f"Ejecutando bloque ELSE")
                         bloque_else = verificar_bloque(nodo[3], tabla_simbolos, linea)
                         if bloque_else[0] == 'error':
                             return ('if_else', 'error', f"Error en el bloque 'else': {bloque_else}")
@@ -206,8 +220,6 @@ def obtener_valor(nodo, tabla_simbolos):
             raise ValueError(f"Variable '{var_name}' no está definida")
     return None
 
-
-
 # Función para procesar bloques fragmentados
 def verificar_bloque(bloque, tabla_simbolos, linea):
     # Asegurarnos de que estamos trabajando con una lista de sentencias
@@ -219,7 +231,7 @@ def verificar_bloque(bloque, tabla_simbolos, linea):
         resultado_sent = verificar_tipo(sent, tabla_simbolos, linea)
         sentencias.append(resultado_sent)
         if resultado_sent[0] == 'error':
-            sentencias.append(('error', f"Error en la sentencia {sent}"))
+            return ('error', f"Error en la sentencia {sent}")
     
     if len(sentencias) == 0:
         return ('error', "Bloque vacío o no declarado.")

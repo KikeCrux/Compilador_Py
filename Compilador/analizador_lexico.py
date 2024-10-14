@@ -71,7 +71,6 @@ t_NOT = r'!'
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
     t.type = reserved.get(t.value, 'ID')  # Chequeo de palabras reservadas
-    t.column = find_column(t.lexer.lexdata, t)  # Asignar la columna al token
     t.lineno = t.lexer.lineno  # Asignar la línea al token
     return t
 
@@ -79,7 +78,6 @@ def t_ID(t):
 def t_NUMBER(t):
     r'\d+(\.\d+)?'
     t.value = float(t.value) if '.' in t.value else int(t.value)
-    t.column = find_column(t.lexer.lexdata, t)  # Asignar la columna al token
     return t
 
 # Ignorar comentarios de una sola línea (// ...)
@@ -105,13 +103,6 @@ def t_error(t):
     print(f"Caracter ilegal '{t.value[0]}' en la línea {t.lexer.lineno}")
     t.lexer.skip(1)
 
-# Función auxiliar para encontrar la columna de un token
-def find_column(text, token):
-    last_cr = text.rfind('\n', 0, token.lexpos)
-    if last_cr < 0:
-        last_cr = -1
-    return token.lexpos - last_cr
-
 # Construir el lexer
 lexer = lex.lex()
 
@@ -123,7 +114,7 @@ def limpiar_espacios_invisibles(texto):
 def analizar_lexico(texto):
     texto = limpiar_espacios_invisibles(texto)
     lexer.lineno = 1  # Reiniciar el número de línea
-    lexer.input(texto)
+    lexer.input(texto)  # Usar el método input de la instancia del lexer
     tokens = []
     while True:
         token = lexer.token()
