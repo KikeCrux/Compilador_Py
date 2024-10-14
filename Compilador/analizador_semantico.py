@@ -69,7 +69,7 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                     tabla_simbolos[var]['lineas'].append(linea)
                 return ('assign', f"{var}.{tipo_var['tipo']}", exp)
 
-            # Si es una operación aritmética, procesar respetando la prioridad de operadores
+            # Si es una operación aritmética
             elif nodo[0] in ('+', '-', '*', '/'):
                 tipo_izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
                 tipo_der = verificar_tipo(nodo[2], tabla_simbolos, linea)
@@ -100,8 +100,10 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                             return ('error', "División por cero", nodo)
                         resultado = valor_izq / valor_der
 
-                    # Retorna el resultado junto con el tipo final de la operación
-                    return ('numero', f"{tipo_final}", resultado)
+                    # Desglose de la operación
+                    desglose = f"({tipo_izq[1]} {valor_izq} {nodo[0]} {tipo_der[1]} {valor_der}) = {resultado}"
+                    # Retorna el resultado junto con el tipo final de la operación y el desglose
+                    return ('numero', f"{tipo_final}", resultado, desglose)
                 else:
                     return ('error', f"Error en la operación {nodo[0]}: tipos incompatibles {tipo_izq} y {tipo_der}")
 
@@ -119,27 +121,28 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
 
                 return ('signo', f"{tipo_final}", valor)
 
-            # Si es una condición if-else con bloques y delimitador fi
+            # Si es una condición if-else con bloques y delimitante fi
             elif nodo[0] == 'if_else':
                 condicion = verificar_tipo(nodo[1], tabla_simbolos, linea)
 
-                # Asegurarnos que la condición sea booleana
+                # Evaluar la condición como booleana
                 if condicion[1] != 'bool':
                     return ('if_else', 'error', "Condición en 'if' debe ser booleana.", condicion)
 
                 # Si la condición es True, procesar el bloque del 'then'
-                bloque_then = verificar_bloque(nodo[2], tabla_simbolos, linea)
-                if bloque_then[0] == 'error':
-                    return ('if_else', 'error', f"Error en el bloque 'then': {bloque_then}")
-                
-                # Procesamos el bloque else (si existe)
-                if len(nodo) > 3:
-                    bloque_else = verificar_bloque(nodo[3], tabla_simbolos, linea)
-                    if bloque_else[0] == 'error':
-                        return ('if_else', 'error', f"Error en el bloque 'else': {bloque_else}")
-                    return ('if_else', 'bool', bloque_then, bloque_else)
-                
-                return ('if_else', 'bool', bloque_then)
+                if obtener_valor(condicion, tabla_simbolos):
+                    bloque_then = verificar_bloque(nodo[2], tabla_simbolos, linea)
+                    if bloque_then[0] == 'error':
+                        return ('if_else', 'error', f"Error en el bloque 'then': {bloque_then}")
+                    return ('if_else', 'bool', bloque_then)
+                else:
+                    # Procesar el bloque else si existe
+                    if len(nodo) > 3:
+                        bloque_else = verificar_bloque(nodo[3], tabla_simbolos, linea)
+                        if bloque_else[0] == 'error':
+                            return ('if_else', 'error', f"Error en el bloque 'else': {bloque_else}")
+                        return ('if_else', 'bool', bloque_else)
+                    return ('if_else', 'bool', 'No se ejecutó el bloque then ni else.')
 
             # Si es un ciclo while
             elif nodo[0] == 'while':
@@ -149,32 +152,21 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                 
                 # Procesar el cuerpo del "while" como un bloque
                 cuerpo = verificar_bloque(nodo[2], tabla_simbolos, linea)
+                if cuerpo[0] == 'error':
+                    return ('while', 'error', f"Error en el cuerpo del 'while': {cuerpo[1]}")
                 return ('while', 'bool', cuerpo)
 
             # Si es un ciclo do-while
             elif nodo[0] == 'do_until':
                 # Procesar el cuerpo del "do" como un bloque
                 cuerpo = verificar_bloque(nodo[1], tabla_simbolos, linea)
+                if cuerpo[0] == 'error':
+                    return ('do_until', 'error', f"Error en el cuerpo del 'do_until': {cuerpo[1]}")
+                
                 condicion = verificar_tipo(nodo[2], tabla_simbolos, linea)  # Verificar la condición del "until"
                 if condicion[1] != 'bool':
                     return ('do_until', 'error', "Condición en 'do_until' debe ser booleana.", cuerpo, condicion)
                 return ('do_until', 'bloque', cuerpo, condicion)
-
-            # Si es una operación lógica
-            elif nodo[0] in ('and', 'or'):
-                tipo_izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
-                tipo_der = verificar_tipo(nodo[2], tabla_simbolos, linea)
-                if tipo_izq[1] != 'bool' or tipo_der[1] != 'bool':
-                    return (nodo[0], 'error', f"Error de tipos: Se esperaba 'bool' en una operación lógica.", tipo_izq, tipo_der)
-                return (nodo[0], 'bool', tipo_izq, tipo_der)
-
-            # Si es una operación de comparación
-            elif nodo[0] in ('==', '!=', '<', '>', '<=', '>='):
-                tipo_izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
-                tipo_der = verificar_tipo(nodo[2], tabla_simbolos, linea)
-                if len(tipo_izq) > 1 and len(tipo_der) > 1 and tipo_izq[1] != tipo_der[1]:
-                    return (nodo[0], 'error', f"Error de tipos: Comparación entre {tipo_izq[1]} y {tipo_der[1]}.", tipo_izq, tipo_der)
-                return (nodo[0], 'bool', tipo_izq, tipo_der)
 
         # Si es un literal booleano (true o false)
         elif nodo in ('true', 'false'):
@@ -193,13 +185,28 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
             # Registrar cada vez que se usa una variable en su lista de líneas
             if linea not in tabla_simbolos[nodo]['lineas']:
                 tabla_simbolos[nodo]['lineas'].append(linea)
-            return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val")  # Concatenamos el nombre y el tipo con .val
+            return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val")
 
         return ('error', f"Nodo no reconocido: {nodo}")
 
     except Exception as e:
         print(f"Error manejado: {e}")
         return ('error', f"Error en la operación: {str(e)}", nodo)
+
+# Función para obtener el valor de un nodo (ya sea variable o número)
+def obtener_valor(nodo, tabla_simbolos):
+    if nodo[0] == 'numero':
+        return nodo[2]
+    elif nodo[0] == 'var':
+        var_name = nodo[2].split('.')[0]
+        tipo = tabla_simbolos.get(var_name, None)
+        if tipo:
+            return tipo['valor']
+        else:
+            raise ValueError(f"Variable '{var_name}' no está definida")
+    return None
+
+
 
 # Función para procesar bloques fragmentados
 def verificar_bloque(bloque, tabla_simbolos, linea):
@@ -225,32 +232,3 @@ def analizar_semantico(arbol, tabla_simbolos):
         return resultado
     except Exception as e:
         return ('error', str(e))
-
-# Obtener valor de un nodo (ya sea variable o número)
-def obtener_valor(nodo, tabla_simbolos):
-    # Manejar números
-    if nodo[0] == 'numero':
-        return nodo[2]
-    
-    # Manejar variables
-    elif nodo[0] == 'var':
-        var_name = nodo[2].split('.')[0]
-        tipo = tabla_simbolos.get(var_name, None)
-        if tipo:
-            return tipo['valor']  # Retorna el valor real si es un número o ya tiene valor
-        else:
-            raise ValueError(f"Variable '{var_name}' no está definida")
-    
-    # Manejar literales booleanos
-    elif nodo[0] == 'literal' and nodo[1] == 'bool':
-        # Retorna True o False según el literal
-        if nodo[2] == 'true':
-            return True
-        elif nodo[2] == 'false':
-            return False
-        else:
-            raise ValueError(f"Valor booleano inesperado: {nodo[2]}")
-    
-    # Si se encuentra un tipo de nodo inesperado
-    else:
-        raise ValueError(f"Tipo inesperado para nodo: {nodo}")
