@@ -136,7 +136,6 @@ def analizar_lexico(texto):
         token.column = find_column(lexer.lexdata, token)  # Asegurarse de que todos los tokens tengan columna
         tokens.append(token)
         # Imprimir el valor del token, la línea y la columna
-        print(f"Token: {token.type}, Valor: {token.value}, Línea: {token.lineno}, Columna: {token.column}")
     return tokens
 
 # Función para reemplazar espacios no separadores (U+00A0) por espacios normales
