@@ -1,3 +1,4 @@
+
 # Inicialización de la tabla de símbolos
 tabla_simbolos = {}
 
@@ -13,14 +14,25 @@ def construir_tabla_simbolos(nodo, tabla_simbolos, linea=1):
                         print(f"Error semántico: La variable '{var}' ya fue declarada en la línea {tabla_simbolos[var]['lineas'][0]}.")
                     else:
                         tabla_simbolos[var] = {'tipo': tipo, 'valor': None, 'lineas': [linea]}  # Guardar la línea de declaración
-        elif nodo[0] == 'main':
-            for decl in nodo[1]:  # Declaraciones dentro del main
+        else:
+            for decl in nodo:  # Declaraciones dentro del main
                 construir_tabla_simbolos(decl, tabla_simbolos, linea)
+    elif isinstance(nodo, str):
+        if nodo in tabla_simbolos:
+            tabla_simbolos[nodo]['lineas'].append(linea)
+    elif isinstance(nodo, list):
+        for node in nodo:
+            construir_tabla_simbolos(node, tabla_simbolos, linea)
+    
 
 # Segunda pasada para evaluar expresiones y asignaciones, actualizando las líneas
-def verificar_tipo(nodo, tabla_simbolos, linea=1):
+def verificar_tipo(nodo, tabla_simbolos, linea=0):
     try:
         if isinstance(nodo, tuple):
+            
+            if isinstance(nodo[-1], int):
+                linea = nodo[-1]
+            print(nodo, " linea: ", linea)
             # Si el nodo es un programa
             if nodo[0] == 'main':
                 declaraciones = []
@@ -41,18 +53,20 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                 return ('main', 'ok', declaraciones, sentencias)
 
             # Si es una declaración de variable
-            if nodo[0] == 'decl':
+            elif nodo[0] == 'decl':
                 tipo = nodo[1]
                 variables = []
                 for var in nodo[2]:
                     if var.strip():  # Verificar que la variable no esté vacía
                         tabla_simbolos[var] = {'tipo': tipo, 'valor': None, 'lineas': [linea]}  # Añadir línea de declaración
-                        variables.append(f"{var}.{tipo}.val(None)")  # Añadir el atributo var.tipo
+                        variables.append(f"{var}.{tipo}.val({tabla_simbolos[var]['valor']})")  # Añadir el atributo var.tipo
                 return ('decl', f"listvar.{tipo}", variables)
 
             # Si es una asignación
             elif nodo[0] == 'assign':
                 var = nodo[1]
+                if var in tabla_simbolos:
+                    tabla_simbolos[var]['lineas'].append(linea)
                 exp = verificar_tipo(nodo[2], tabla_simbolos, linea)
                 tipo_var = tabla_simbolos.get(var, None)
                 if tipo_var is None:
@@ -132,7 +146,9 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
                     resultado = valor_izq != valor_der
 
                 return ('rel', 'bool', resultado)
-
+            else:
+                for node in nodo:
+                    verificar_tipo(node, tabla_simbolos, linea)
         # Si es un número
         elif isinstance(nodo, (int, float)):
             tipo = 'int' if isinstance(nodo, int) else 'float'
@@ -140,11 +156,17 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
 
         # Si es un identificador (variable)
         elif isinstance(nodo, str):
+            if nodo in tabla_simbolos:
+                tabla_simbolos[nodo]['lineas'].append(linea)
             tipo = tabla_simbolos.get(nodo, "undefined")
             if tipo == "undefined":
                 return ('error', f"Variable '{nodo}' no está declarada.")
             # Registrar cada vez que se usa una variable en su lista de líneas
             return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val")
+        
+        elif isinstance(nodo, list):
+            for node in nodo:
+                verificar_tipo(node, tabla_simbolos, linea)
 
         return ('error', f"Nodo no reconocido: {nodo}")
 

@@ -189,7 +189,7 @@ class IDE:
         
         # Crear tabla de símbolos preliminar
         self.tabla_simbolos = {}
-        construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
+        #construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
         
         # Pasar la tabla de símbolos al análisis semántico
         resultado_semantico = analizar_semantico(arbol_sintactico, self.tabla_simbolos)
@@ -235,7 +235,8 @@ class IDE:
     def mostrar_tabla_simbolos(self):
         self.texto_simbolos.delete("1.0", tk.END)
         for var, info in self.tabla_simbolos.items():
-            self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {info['tipo']} | Línea(s): {info['lineas']}\n")
+            print(info)
+            self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {info['tipo']} | Línea(s): {str(info['lineas'])}\n")
 
     def mostrar_arbol_semantico(self, texto):
         self.limpiar_arbol_semantico()
