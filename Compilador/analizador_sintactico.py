@@ -57,8 +57,8 @@ def p_sent(p):
         p[0] = p[1]
 
 def p_sent_if(p):
-    '''sent_if : IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI SEMICOLON
-               | IF LPAREN exp_bool RPAREN THEN bloque FI SEMICOLON'''
+    '''sent_if : IF LPAREN exp_bool RPAREN THEN bloque ELSE bloque FI
+               | IF LPAREN exp_bool RPAREN THEN bloque FI'''
     if len(p) == 10:
         p[0] = ('if_else', p[3], p[6], p[8])
     else:
@@ -156,7 +156,8 @@ def p_unario(p):
         p[0] = p[1]
 
 def p_factor(p):
-    '''factor : NUMBER
+    '''factor : NUMBERINT
+              | NUMBERFLOAT
               | ID
               | LPAREN exp_bool RPAREN
               | TRUE

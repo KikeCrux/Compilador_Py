@@ -26,7 +26,8 @@ reserved = {
 # Definir los tokens del lexer
 tokens = (
     'ID',
-    'NUMBER',
+    'NUMBERINT',
+    'NUMBERFLOAT',
     'PLUS',
     'MINUS',
     'TIMES',
@@ -74,10 +75,16 @@ def t_ID(t):
     t.lineno = t.lexer.lineno  # Asignar la línea al token
     return t
 
-# Manejar números (enteros y flotantes)
-def t_NUMBER(t):
-    r'\d+(\.\d+)?'
-    t.value = float(t.value) if '.' in t.value else int(t.value)
+# Manejar números (flotantes)
+def t_NUMBERFLOAT(t):
+    r'\d+(\.\d+)'
+    t.value = float(t.value)
+    return t
+
+# Manejar números (enteros)
+def t_NUMBERINT(t):
+    r'\d+'
+    t.value = int(t.value)
     return t
 
 # Ignorar comentarios de una sola línea (// ...)

@@ -127,7 +127,7 @@ class IDE:
             "bool", "int", "char", "byte", "long", "double", "if", "else",
             "while", "for", "switch", "case", "break", "try", "return",
             "void", "public", "protected", "private", "class", "abstract",
-            "interface", "this", "friend", "do", "until", "float", "then"
+            "interface", "this", "friend", "do", "until", "float", "then", "fi"
         ]
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
@@ -279,6 +279,7 @@ class IDE:
                 variable_item = self.texto_sintactico.insert(item, "end", text=f"{nodo[1]} = {nodo[2]}")
                 self.texto_sintactico.item(variable_item, open=True)
                 self.texto_sintactico.item(item, open=True)
+                self.insertar_nodo(item, nodo[2])
             else:
                 item = self.texto_sintactico.insert(parent, "end", text=str(nodo[0]), open=True)
                 for subnodo in nodo[1:]:
