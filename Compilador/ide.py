@@ -127,7 +127,8 @@ class IDE:
             "bool", "int", "char", "byte", "long", "double", "if", "else",
             "while", "for", "switch", "case", "break", "try", "return",
             "void", "public", "protected", "private", "class", "abstract",
-            "interface", "this", "friend", "do", "until", "float", "then", "fi"
+            "interface", "this", "friend", "do", "until", "float", "then", "fi",
+            "and", "or"
         ]
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
