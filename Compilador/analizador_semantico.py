@@ -133,59 +133,6 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
 
                 return ('rel', 'bool', resultado)
 
-            # Si es una condición if-else con bloques y delimitante fi
-            elif nodo[0] == 'if_else' or nodo[0] == 'if':
-                condicion = verificar_tipo(nodo[1], tabla_simbolos, linea)
-
-                # Evaluar la condición como booleana
-                if condicion[1] != 'bool':
-                    return ('if_else', 'error', "Condición en 'if' debe ser booleana.", condicion)
-
-                # Si la condición es True, procesar el bloque del 'then'
-                if obtener_valor(condicion, tabla_simbolos):
-                    print(f"Ejecutando bloque THEN, condicion: {obtener_valor(condicion, tabla_simbolos)}")
-                    bloque_then = verificar_bloque(nodo[2], tabla_simbolos, linea)
-                    if bloque_then[0] == 'error':
-                        return ('if_else', 'error', f"Error en el bloque 'then': {bloque_then}")
-                    return ('if_else', 'bool', bloque_then)
-                else:
-                    # Procesar el bloque else si existe
-                    if len(nodo) > 3:
-                        print(f"Ejecutando bloque ELSE")
-                        bloque_else = verificar_bloque(nodo[3], tabla_simbolos, linea)
-                        if bloque_else[0] == 'error':
-                            return ('if_else', 'error', f"Error en el bloque 'else': {bloque_else}")
-                        return ('if_else', 'bool', bloque_else)
-                    return ('if_else', 'bool', 'No se ejecutó el bloque then ni else.')
-
-            # Si es un ciclo while
-            elif nodo[0] == 'while':
-                condicion = verificar_tipo(nodo[1], tabla_simbolos, linea)
-                if condicion[1] != 'bool':
-                    return ('while', 'error', "Condición en 'while' debe ser booleana.", condicion)
-                
-                # Procesar el cuerpo del "while" como un bloque
-                cuerpo = verificar_bloque(nodo[2], tabla_simbolos, linea)
-                if cuerpo[0] == 'error':
-                    return ('while', 'error', f"Error en el cuerpo del 'while': {cuerpo[1]}")
-                return ('while', 'bool', cuerpo)
-
-            # Si es un ciclo do-while
-            elif nodo[0] == 'do_until':
-                # Procesar el cuerpo del "do" como un bloque
-                cuerpo = verificar_bloque(nodo[1], tabla_simbolos, linea)
-                if cuerpo[0] == 'error':
-                    return ('do_until', 'error', f"Error en el cuerpo del 'do_until': {cuerpo[1]}")
-                
-                condicion = verificar_tipo(nodo[2], tabla_simbolos, linea)  # Verificar la condición del "until"
-                if condicion[1] != 'bool':
-                    return ('do_until', 'error', "Condición en 'do_until' debe ser booleana.", cuerpo, condicion)
-                return ('do_until', 'bloque', cuerpo, condicion)
-
-        # Si es un literal booleano (true o false)
-        elif nodo in ('true', 'false'):
-            return ('literal', 'bool', nodo)
-
         # Si es un número
         elif isinstance(nodo, (int, float)):
             tipo = 'int' if isinstance(nodo, int) else 'float'
@@ -197,8 +144,6 @@ def verificar_tipo(nodo, tabla_simbolos, linea=1):
             if tipo == "undefined":
                 return ('error', f"Variable '{nodo}' no está declarada.")
             # Registrar cada vez que se usa una variable en su lista de líneas
-            if linea not in tabla_simbolos[nodo]['lineas']:
-                tabla_simbolos[nodo]['lineas'].append(linea)
             return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val")
 
         return ('error', f"Nodo no reconocido: {nodo}")
@@ -244,3 +189,17 @@ def analizar_semantico(arbol, tabla_simbolos):
         return resultado
     except Exception as e:
         return ('error', str(e))
+
+# Función para imprimir el árbol de manera legible
+def imprimir_arbol(arbol, nivel=0):
+    if isinstance(arbol, tuple):
+        print("  " * nivel + str(arbol[0]))
+        for subarbol in arbol[1:]:
+            imprimir_arbol(subarbol, nivel + 1)
+    else:
+        print("  " * nivel + str(arbol))
+
+# Probar el programa
+def analizar_programa(codigo):
+    resultado_semantico = analizar_semantico(codigo, tabla_simbolos)
+    imprimir_arbol(resultado_semantico)

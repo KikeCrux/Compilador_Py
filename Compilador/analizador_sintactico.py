@@ -1,8 +1,9 @@
 import ply.yacc as yacc
-from analizador_lexico import tokens, lexer
+from analizador_lexico import tokens  # Asegúrate de tener el analizador léxico ya definido
+from analizador_lexico import lexer  # Importar el lexer
 
-# Definir la gramática
 
+# Construcción del parser
 def p_programa(p):
     '''programa : MAIN LBRACE lista_decl lista_sent RBRACE'''
     p[0] = ('main', p[3], p[4])
@@ -169,7 +170,7 @@ def p_empty(p):
     '''empty :'''
     pass
 
-# Mejorar la detección de errores de sintaxis
+# Manejo de errores
 errores = []
 
 def p_error(p):
@@ -180,6 +181,7 @@ def p_error(p):
     else:
         errores.append("Error de sintaxis en EOF (fin del archivo)")
 
+# Encontrar la columna de un error
 def encontrar_columna(token):
     last_cr = lexer.lexdata.rfind('\n', 0, token.lexpos)
     if last_cr < 0:
@@ -189,20 +191,10 @@ def encontrar_columna(token):
 # Construir el parser
 parser = yacc.yacc()
 
+# Función para analizar sintácticamente el código
 def analizar_sintactico(texto):
     global errores
     errores = []
-    resultado = parser.parse(texto)
+    lexer.input(texto)  # Alimentar el lexer con el texto a analizar
+    resultado = parser.parse(texto, lexer=lexer)
     return resultado, errores
-
-def formatear_arbol(arbol, nivel=0):
-    resultado = ""
-    if isinstance(arbol, tuple):
-        resultado += "  " * nivel + "(\n"
-        resultado += "  " * (nivel + 1) + str(arbol[0]) + "\n"
-        for elemento in arbol[1:]:
-            resultado += formatear_arbol(elemento, nivel + 2) + "\n"
-        resultado += "  " * nivel + ")"
-    else:
-        resultado += "  " * nivel + str(arbol)
-    return resultado

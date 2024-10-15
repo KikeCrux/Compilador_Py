@@ -6,7 +6,7 @@ reserved = {
     'bool': 'BOOL',
     'int': 'INT',
     'float': 'FLOAT',
-    'char': 'CHAR',
+    'char': 'CHAR',  # Se agregó 'char'
     'if': 'IF',
     'else': 'ELSE',
     'fi': 'FI',
