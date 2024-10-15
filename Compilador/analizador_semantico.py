@@ -25,14 +25,13 @@ def construir_tabla_simbolos(nodo, tabla_simbolos, linea=1):
             construir_tabla_simbolos(node, tabla_simbolos, linea)
     
 
-# Segunda pasada para evaluar expresiones y asignaciones, actualizando las líneas
+# Segunda pasada para evaluar expresiones y asignaciones
 def verificar_tipo(nodo, tabla_simbolos, linea=0):
     try:
         if isinstance(nodo, tuple):
             
             if isinstance(nodo[-1], int):
                 linea = nodo[-1]
-            print(nodo, " linea: ", linea)
             # Si el nodo es un programa
             if nodo[0] == 'main':
                 declaraciones = []
@@ -147,8 +146,10 @@ def verificar_tipo(nodo, tabla_simbolos, linea=0):
 
                 return ('rel', 'bool', resultado)
             else:
+                results = []
                 for node in nodo:
-                    verificar_tipo(node, tabla_simbolos, linea)
+                    results.append(verificar_tipo(node, tabla_simbolos, linea))
+                return (nodo[0], 'sentencia', results)
         # Si es un número
         elif isinstance(nodo, (int, float)):
             tipo = 'int' if isinstance(nodo, int) else 'float'
@@ -160,7 +161,7 @@ def verificar_tipo(nodo, tabla_simbolos, linea=0):
                 tabla_simbolos[nodo]['lineas'].append(linea)
             tipo = tabla_simbolos.get(nodo, "undefined")
             if tipo == "undefined":
-                return ('error', f"Variable '{nodo}' no está declarada.")
+                return (nodo[0], 'str')
             # Registrar cada vez que se usa una variable en su lista de líneas
             return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val")
         
