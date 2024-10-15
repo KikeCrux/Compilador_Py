@@ -207,8 +207,11 @@ class IDE:
         for token in tokens:
             lexema = str(token.value)
             fila = token.lineno
+            columna = "N/A"
+            if hasattr(token, 'column'):
+                columna = token.column
             # No se incluye la columna, ya que no es necesaria
-            self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5}\n")
+            self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5} {columna:<5}\n")
 
     def mostrar_arbol_sintactico(self, texto):
         self.error_texto.delete("1.0", tk.END)

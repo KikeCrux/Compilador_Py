@@ -6,7 +6,7 @@ reserved = {
     'bool': 'BOOL',
     'int': 'INT',
     'float': 'FLOAT',
-    'char': 'CHAR',  # Se agregó 'char'
+    'char': 'CHAR',
     'if': 'IF',
     'else': 'ELSE',
     'fi': 'FI',
@@ -68,23 +68,33 @@ t_EQ = r'=='
 t_NE = r'!='
 t_NOT = r'!'
 
+# Calcular la columna de un token
+def find_column(input_text, token):
+    last_cr = input_text.rfind('\n', 0, token.lexpos)
+    if last_cr < 0:
+        last_cr = -1
+    return token.lexpos - last_cr
+
 # Manejar identificadores y palabras reservadas
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
     t.type = reserved.get(t.value, 'ID')  # Chequeo de palabras reservadas
     t.lineno = t.lexer.lineno  # Asignar la línea al token
+    t.column = find_column(t.lexer.lexdata, t)  # Calcular la columna
     return t
 
 # Manejar números (flotantes)
 def t_NUMBERFLOAT(t):
-    r'\d+(\.\d+)'
+    r'\d+(\.\d+)?'
     t.value = float(t.value)
+    t.column = find_column(t.lexer.lexdata, t)  # Calcular la columna
     return t
 
 # Manejar números (enteros)
 def t_NUMBERINT(t):
     r'\d+'
     t.value = int(t.value)
+    t.column = find_column(t.lexer.lexdata, t)  # Calcular la columna
     return t
 
 # Ignorar comentarios de una sola línea (// ...)
@@ -107,15 +117,11 @@ def t_newline(t):
 
 # Manejar errores de caracteres ilegales
 def t_error(t):
-    print(f"Caracter ilegal '{t.value[0]}' en la línea {t.lexer.lineno}")
+    print(f"Caracter ilegal '{t.value[0]}' en la línea {t.lexer.lineno}, columna {find_column(t.lexer.lexdata, t)}")
     t.lexer.skip(1)
 
 # Construir el lexer
 lexer = lex.lex()
-
-# Función para reemplazar espacios no separadores (U+00A0) por espacios normales
-def limpiar_espacios_invisibles(texto):
-    return texto.replace('\u00A0', ' ')
 
 # Función que realiza el análisis léxico después de limpiar el texto
 def analizar_lexico(texto):
@@ -127,5 +133,12 @@ def analizar_lexico(texto):
         token = lexer.token()
         if not token:
             break
+        token.column = find_column(lexer.lexdata, token)  # Asegurarse de que todos los tokens tengan columna
         tokens.append(token)
+        # Imprimir el valor del token, la línea y la columna
+        print(f"Token: {token.type}, Valor: {token.value}, Línea: {token.lineno}, Columna: {token.column}")
     return tokens
+
+# Función para reemplazar espacios no separadores (U+00A0) por espacios normales
+def limpiar_espacios_invisibles(texto):
+    return texto.replace('\u00A0', ' ')
