@@ -287,7 +287,7 @@ class IDE:
                 self.insertar_nodo(item, nodo[2])
             else:
                 item = self.texto_sintactico.insert(parent, "end", text=str(nodo[0]), open=True)
-                for subnodo in nodo[1:]:
+                for subnodo in nodo[1:-1]:
                     self.insertar_nodo(item, subnodo)
                 self.texto_sintactico.item(item, open=True)
         elif isinstance(nodo, list):
