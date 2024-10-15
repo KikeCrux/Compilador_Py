@@ -85,7 +85,7 @@ def t_ID(t):
 
 # Manejar números (flotantes)
 def t_NUMBERFLOAT(t):
-    r'\d+(\.\d+)?'
+    r'\d+(\.\d+)'
     t.value = float(t.value)
     t.column = find_column(t.lexer.lexdata, t)  # Calcular la columna
     return t
