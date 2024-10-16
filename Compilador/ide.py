@@ -235,7 +235,6 @@ class IDE:
     def mostrar_tabla_simbolos(self):
         self.texto_simbolos.delete("1.0", tk.END)
         for var, info in self.tabla_simbolos.items():
-            print(info)
             self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {info['tipo']} | Línea(s): {str(info['lineas'])}\n")
 
     def mostrar_arbol_semantico(self, texto):
@@ -263,7 +262,8 @@ class IDE:
             for subnodo in nodo:
                 self.insertar_arbol_semantico(parent, subnodo)
         else:
-            self.texto_semantico.insert(parent, "end", text=str(nodo))
+            if nodo != "None" and nodo != None:
+                self.texto_semantico.insert(parent, "end", text=str(nodo))
 
     def limpiar_arbol_sintactico(self):
         for item in self.texto_sintactico.get_children():
