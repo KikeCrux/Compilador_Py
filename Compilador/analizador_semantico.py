@@ -29,39 +29,30 @@ def construir_tabla_simbolos(nodo, tabla_simbolos, linea=1):
 def verificar_tipo(nodo, tabla_simbolos, linea=0):
     try:
         if isinstance(nodo, tuple):
-            
             if isinstance(nodo[-1], int):
                 linea = nodo[-1]
-            # Si el nodo es un programa
             if nodo[0] == 'main':
                 declaraciones = []
                 sentencias = []
-
                 for decl in nodo[1]:
                     resultado_decl = verificar_tipo(decl, tabla_simbolos, linea)
                     declaraciones.append(resultado_decl)
                     if resultado_decl[0] == 'error':
                         declaraciones.append(('error', f"Error en la declaración {decl}"))
-
                 for sent in nodo[2]:
                     resultado_sent = verificar_tipo(sent, tabla_simbolos, linea)
                     sentencias.append(resultado_sent)
                     if resultado_sent[0] == 'error':
                         sentencias.append(('error', f"Error en la sentencia {sent}"))
-
                 return ('program', 'main', declaraciones, sentencias)
-
-            # Si es una declaración de variable
             elif nodo[0] == 'decl':
                 tipo = nodo[1]
                 variables = []
                 for var in nodo[2]:
-                    if var.strip():  # Verificar que la variable no esté vacía
-                        tabla_simbolos[var] = {'tipo': tipo, 'valor': None, 'lineas': [linea]}  # Añadir línea de declaración
-                        variables.append(f"{var}.{tipo}.val({tabla_simbolos[var]['valor']})")  # Añadir el atributo var.tipo
+                    if var.strip():
+                        tabla_simbolos[var] = {'tipo': tipo, 'valor': None, 'lineas': [linea]}
+                        variables.append(f"{var}.{tipo}.val({tabla_simbolos[var]['valor']})")
                 return ('decl', f"listvar.{tipo}", variables)
-
-            # Si es una asignación
             elif nodo[0] == 'assign':
                 var = nodo[1]
                 if var in tabla_simbolos:
@@ -70,38 +61,18 @@ def verificar_tipo(nodo, tabla_simbolos, linea=0):
                 tipo_var = tabla_simbolos.get(var, None)
                 if tipo_var is None:
                     return ('assign', 'error', f"Variable '{var}' no está declarada.", exp)
-                
-                # Comprobar que los tipos sean compatibles
-                #if len(exp) > 1 and tipo_var['tipo'] != exp[1].split('.')[0]:  # Comparamos solo el tipo (int o float)
-                #    return ('assign', 'error', f"Error de tipos: Se esperaba {tipo_var['tipo']} pero se encontró {exp[1]}", exp)
-                
-                # Asignar el valor y la línea de la asignación
                 valor = obtener_valor(exp, tabla_simbolos)
-                tabla_simbolos[var]['valor'] = valor  # Asignar el nuevo valor
-                if linea not in tabla_simbolos[var]['lineas']:  # Asegurarse de que la línea esté registrada
+                tabla_simbolos[var]['valor'] = valor
+                if linea not in tabla_simbolos[var]['lineas']:
                     tabla_simbolos[var]['lineas'].append(linea)
                 return ('assign', f"{var}.{tipo_var['tipo']}", exp)
-
-            # Si es una operación aritmética
             elif nodo[0] in ('+', '-', '*', '/'):
-                
                 tipo_izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
                 tipo_der = verificar_tipo(nodo[2], tabla_simbolos, linea)
-               
                 if tipo_izq[0] == 'error' or tipo_der[0] == 'error':
                     return ('error', f"Error en operandos de la operación {nodo[0]}")
-
-                # Aplicar promoción de tipos (float si alguno es float, int si ambos son int)
-                #if 'float' in tipo_izq[1] or 'float' in tipo_der[1]:
-                #    tipo_final = 'float'
-                #else:
-                #    tipo_final = 'int'
-               
-                # Obtener los valores reales si son enteros o flotantes
                 valor_izq = obtener_valor(tipo_izq, tabla_simbolos)
                 valor_der = obtener_valor(tipo_der, tabla_simbolos)
-                
-                # Resolver la operación según el operador
                 if isinstance(valor_izq, (int, float)) and isinstance(valor_der, (int, float)):
                     if nodo[0] == '+':
                         resultado = valor_izq + valor_der
@@ -112,10 +83,10 @@ def verificar_tipo(nodo, tabla_simbolos, linea=0):
                     elif nodo[0] == '/':
                         if valor_der == 0:
                             return ('error', "División por cero", nodo)
-                        resultado = valor_izq / valor_der
-
-                    # Desglose de la operación
-
+                        if isinstance(valor_izq, int) and isinstance(valor_der, int):
+                            resultado = valor_izq // valor_der
+                        else:
+                            resultado = valor_izq / valor_der
                     desglose = []
                     if tipo_izq[0] == "numero":
                         desglose.append(tipo_izq[2])
@@ -125,86 +96,27 @@ def verificar_tipo(nodo, tabla_simbolos, linea=0):
                         desglose.append(tipo_der[2])
                     else:
                         desglose.append(tipo_der)
-                    
-                    # Retorna el resultado junto con el tipo final de la operación y el desglose
                     return (nodo[0], resultado, desglose)
                 else:
                     return ('error', f"Error en la operación {nodo[0]}: tipos incompatibles {tipo_izq} y {tipo_der}")
-
-            # Si es una operación relacional (>, <, >=, <=, ==, !=)
-            elif nodo[0] in ('>', '<', '>=', '<=', '==', '!='):
-                izq = verificar_tipo(nodo[1], tabla_simbolos, linea)
-                der = verificar_tipo(nodo[2], tabla_simbolos, linea)
-                if izq[0] == 'error' or der[0] == 'error':
-                    return ('error', f"Error en operandos de la relación {nodo[0]}")
-
-                valor_izq = obtener_valor(izq, tabla_simbolos)
-                valor_der = obtener_valor(der, tabla_simbolos)
-
-                if nodo[0] == '>':
-                    resultado = valor_izq > valor_der
-                elif nodo[0] == '<':
-                    resultado = valor_izq < valor_der
-                elif nodo[0] == '>=':
-                    resultado = valor_izq >= valor_der
-                elif nodo[0] == '<=':
-                    resultado = valor_izq <= valor_der
-                elif nodo[0] == '==':
-                    resultado = valor_izq == valor_der
-                elif nodo[0] == '!=':
-                    resultado = valor_izq != valor_der
-
-                resultado = bool(resultado)
-
-                desglose = []
-                if izq[0] == "numero":
-                    desglose.append(izq[2])
-                else:
-                    desglose.append(izq)
-                if der[0] == "numero":
-                    desglose.append(der[2])
-                else:
-                    desglose.append(der)
-
-                return (nodo[0], resultado, desglose)
             else:
                 results = []
                 for node in nodo[:-1]:
                     results.append(verificar_tipo(node, tabla_simbolos, linea))
                 return (nodo[0], 'sentencia', results)
-        # Si es un número
         elif isinstance(nodo, (int, float)):
             tipo = 'int' if isinstance(nodo, int) else 'float'
-            return ('numero', f"{tipo}", nodo)  # Incluye el tipo y el valor del número
-
-        # Si es un identificador (variable)
+            return ('numero', f"{tipo}", nodo)
         elif isinstance(nodo, str):
             if nodo in tabla_simbolos:
                 tabla_simbolos[nodo]['lineas'].append(linea)
                 tipo = tabla_simbolos.get(nodo, "undefined")
                 if tipo != "undefined":
-                    # Registrar cada vez que se usa una variable en su lista de líneas
                     return ('var', f"{tipo['tipo']}", f"{nodo}.{tipo['tipo']}.val({tipo['valor']})")
-        
-        elif isinstance(nodo, list):
-            results = []
-            for node in nodo:
-                result = verificar_tipo(node, tabla_simbolos, linea)
-                #if not isinstance(node, tuple):
-                results.append(result)
-            if isinstance(nodo[0], tuple):
-                return (nodo[0][0], f'sentencia', results)
-            else:
-                return (nodo[0], f'sentencia', results)
-                
-
-        #return ('error', f"Nodo no reconocido: {nodo}, {type(nodo)}")
-
     except Exception as e:
         print(f"Error manejado: {e}", nodo)
         return ('error', f"Error en la operación: {str(e)}", nodo)
 
-# Función para obtener el valor de un nodo (ya sea variable o número)
 def obtener_valor(nodo, tabla_simbolos):
     if nodo[0] == "numero":
         return nodo[2]
