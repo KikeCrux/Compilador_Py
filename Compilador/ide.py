@@ -1,10 +1,11 @@
-# IDE
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 import re
+import subprocess
 from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
 from analizador_semantico import analizar_semantico, construir_tabla_simbolos
+from code_generator import CodeGenerator  # Importamos el generador de código
 
 class IDE:
     def __init__(self, root):
@@ -42,25 +43,31 @@ class IDE:
         self.panel_lexico = tk.Frame(self.pestanas)
         self.texto_lexico = scrolledtext.ScrolledText(self.panel_lexico, wrap="word", width=30, height=10)
         self.texto_lexico.pack(expand=True, fill="both")
-        self.pestanas.add(self.panel_lexico, text="Lexico")
+        self.pestanas.add(self.panel_lexico, text="Léxico")
 
         # Pestaña para el análisis sintáctico
         self.panel_sintactico = tk.Frame(self.pestanas)
         self.texto_sintactico = ttk.Treeview(self.panel_sintactico)
         self.texto_sintactico.pack(expand=True, fill="both")
-        self.pestanas.add(self.panel_sintactico, text="Sintactico")
+        self.pestanas.add(self.panel_sintactico, text="Sintáctico")
 
         # Pestaña para el análisis semántico
         self.panel_semantico = tk.Frame(self.pestanas)
         self.texto_semantico = ttk.Treeview(self.panel_semantico)
         self.texto_semantico.pack(expand=True, fill="both")
-        self.pestanas.add(self.panel_semantico, text="Semantico")
+        self.pestanas.add(self.panel_semantico, text="Semántico")
 
         # Pestaña para la tabla de símbolos
         self.panel_simbolos = tk.Frame(self.pestanas)
         self.texto_simbolos = scrolledtext.ScrolledText(self.panel_simbolos, wrap="word", width=30, height=10)
         self.texto_simbolos.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_simbolos, text="Tabla de Símbolos")
+
+        # Pestaña para el código generado
+        self.panel_codigo = tk.Frame(self.pestanas)
+        self.texto_codigo = scrolledtext.ScrolledText(self.panel_codigo, wrap="word", width=30, height=10)
+        self.texto_codigo.pack(expand=True, fill="both")
+        self.pestanas.add(self.panel_codigo, text="Código Generado")
 
         frame_inferior = tk.Frame(self.root)
         frame_inferior.pack(side="bottom", fill="both", expand=True)
@@ -128,7 +135,7 @@ class IDE:
             "while", "for", "switch", "case", "break", "try", "return",
             "void", "public", "protected", "private", "class", "abstract",
             "interface", "this", "friend", "do", "until", "float", "then", "fi",
-            "and", "or"
+            "and", "or", "main", "read", "write", "true", "false"
         ]
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
@@ -184,21 +191,71 @@ class IDE:
             for error in errores_sintacticos:
                 self.error_texto.insert(tk.END, error + "\n")
             return
-        
+
         self.mostrar_arbol_sintactico(texto)
-        
-        # Crear tabla de símbolos preliminar
+
+        # Crear tabla de símbolos
         self.tabla_simbolos = {}
-        #construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
-        
+        construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
+
         # Pasar la tabla de símbolos al análisis semántico
         resultado_semantico = analizar_semantico(arbol_sintactico, self.tabla_simbolos)
-        
+
         # Mostrar la tabla de símbolos
         self.mostrar_tabla_simbolos()
 
         # Mostrar resultados del análisis semántico
         self.mostrar_arbol_semantico(texto)
+
+        # Generar código
+        code_gen = CodeGenerator()
+        code_gen.generate_code(arbol_sintactico)
+        # Escribir el código generado en un archivo para la Máquina Tiny
+        codigo_pcode = code_gen.write_code("output.pcode")
+        # Mostrar el código generado en la pestaña correspondiente
+        self.texto_codigo.delete("1.0", tk.END)
+        self.texto_codigo.insert(tk.END, codigo_pcode)
+
+        # **Ejecutar el código TM y mostrar el resultado**
+        self.ejecutar_tm_y_mostrar_resultado()
+
+        # Mensaje en la salida de compilación
+        self.salida_compilacion.delete("1.0", tk.END)
+        self.salida_compilacion.insert(tk.END, "Compilación exitosa. Código generado y ejecutado.")
+
+    def ejecutar_tm_y_mostrar_resultado(self):
+        # Limpiar la sección de resultados y errores
+        self.resultado_texto.delete("1.0", tk.END)
+        self.error_texto.delete("1.0", tk.END)
+
+        # Definir el comando para ejecutar el TM
+        command = ['tm.exe', '../output.pcode']  # Ajusta la ruta y el nombre del ejecutable si es necesario
+
+        try:
+            # Ejecutar el comando con subprocess
+            process = subprocess.Popen(command,
+                                       stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       text=True)
+
+            # Enviar el comando 'g' para iniciar la ejecución
+            output, error = process.communicate(input='g\n')
+
+            # Procesar la salida para extraer los valores impresos
+            out_lines = re.findall(r'OUT instruction prints:.*', output)
+            values = [line.split(':')[-1].strip() for line in out_lines]
+
+            # Mostrar los valores en la sección de resultados
+            for val in values:
+                self.resultado_texto.insert(tk.END, f"{val}\n")
+
+            # Mostrar errores si los hay
+            if error:
+                self.error_texto.insert(tk.END, error)
+
+        except Exception as e:
+            self.error_texto.insert(tk.END, f"Error al ejecutar TM: {e}")
 
     def mostrar_tokens_lexicos(self, texto):
         self.texto_lexico.delete("1.0", tk.END)
@@ -211,7 +268,6 @@ class IDE:
             columna = "N/A"
             if hasattr(token, 'column'):
                 columna = token.column
-            # No se incluye la columna, ya que no es necesaria
             self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5} {columna:<5}\n")
 
     def mostrar_arbol_sintactico(self, texto):
