@@ -1,19 +1,22 @@
+import os
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 import re
 import subprocess
+import threading
 from analizador_lexico import analizar_lexico
 from analizador_sintactico import analizar_sintactico
 from analizador_semantico import analizar_semantico, construir_tabla_simbolos
-from code_generator import CodeGenerator  # Importamos el generador de código
+from code_generator import CodeGenerator
+from tkinter import simpledialog
 
 class IDE:
     def __init__(self, root):
         self.root = root
         self.root.title("Compilador chafa")
-
-        # Inicializar la tabla de símbolos como un diccionario vacío
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self.tabla_simbolos = {}
+        self.tm_process = None
 
         frame_superior = tk.Frame(self.root)
         frame_superior.pack(side="top", fill="both", expand=True)
@@ -31,43 +34,44 @@ class IDE:
 
         self.texto_scroll.config(command=self.texto.yview)
         self.texto_scroll.config(command=self.sync_scroll)
-
-        # Sincronizar scroll con números de línea
         self.texto_scroll.bind("<MouseWheel>", self.on_scroll)
         self.texto.bind("<MouseWheel>", self.on_scroll)
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
 
-        # Pestaña para el análisis léxico
         self.panel_lexico = tk.Frame(self.pestanas)
         self.texto_lexico = scrolledtext.ScrolledText(self.panel_lexico, wrap="word", width=30, height=10)
         self.texto_lexico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_lexico, text="Léxico")
 
-        # Pestaña para el análisis sintáctico
         self.panel_sintactico = tk.Frame(self.pestanas)
         self.texto_sintactico = ttk.Treeview(self.panel_sintactico)
         self.texto_sintactico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_sintactico, text="Sintáctico")
 
-        # Pestaña para el análisis semántico
         self.panel_semantico = tk.Frame(self.pestanas)
         self.texto_semantico = ttk.Treeview(self.panel_semantico)
         self.texto_semantico.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_semantico, text="Semántico")
 
-        # Pestaña para la tabla de símbolos
         self.panel_simbolos = tk.Frame(self.pestanas)
         self.texto_simbolos = scrolledtext.ScrolledText(self.panel_simbolos, wrap="word", width=30, height=10)
         self.texto_simbolos.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_simbolos, text="Tabla de Símbolos")
 
-        # Pestaña para el código generado
         self.panel_codigo = tk.Frame(self.pestanas)
         self.texto_codigo = scrolledtext.ScrolledText(self.panel_codigo, wrap="word", width=30, height=10)
         self.texto_codigo.pack(expand=True, fill="both")
         self.pestanas.add(self.panel_codigo, text="Código Generado")
+
+        self.panel_consola = tk.Frame(self.pestanas)
+        self.consola_salida = scrolledtext.ScrolledText(self.panel_consola, wrap="word", width=30, height=10, state="disabled")
+        self.consola_salida.pack(expand=True, fill="both")
+        self.consola_entrada = tk.Entry(self.panel_consola)
+        self.consola_entrada.pack(fill="x")
+        self.consola_entrada.bind("<Return>", self.enviar_comando_tm)
+        self.pestanas.add(self.panel_consola, text="Consola")
 
         frame_inferior = tk.Frame(self.root)
         frame_inferior.pack(side="bottom", fill="both", expand=True)
@@ -129,7 +133,6 @@ class IDE:
         self.texto.tag_remove("reservada", "1.0", tk.END)
         self.texto.tag_remove("string", "1.0", tk.END)
         self.texto.tag_remove("comentario", "1.0", tk.END)
-
         palabras_reservadas = [
             "bool", "int", "char", "byte", "long", "double", "if", "else",
             "while", "for", "switch", "case", "break", "try", "return",
@@ -139,23 +142,18 @@ class IDE:
         ]
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
-        patron_comentario = r'(//.*|/\*[\s\S]*?\*/)' 
-
+        patron_comentario = r'(//.*|/\*[\s\S]*?\*/)'
         self.texto.tag_configure("reservada", foreground="blue")
         self.texto.tag_configure("string", foreground="red")
         self.texto.tag_configure("comentario", foreground="green")
         self.texto.tag_configure("error", background="yellow")
-
         texto = self.texto.get("1.0", tk.END)
-
         for match in re.finditer(patron_palabras_reservadas, texto):
             start, end = match.span()
             self.texto.tag_add("reservada", f"1.0+{start}c", f"1.0+{end}c")
-
         for match in re.finditer(patron_string, texto):
             start, end = match.span()
             self.texto.tag_add("string", f"1.0+{start}c", f"1.0+{end}c")
-
         for match in re.finditer(patron_comentario, texto):
             start, end = match.span()
             self.texto.tag_add("comentario", f"1.0+{start}c", f"1.0+{end}c")
@@ -191,71 +189,84 @@ class IDE:
             for error in errores_sintacticos:
                 self.error_texto.insert(tk.END, error + "\n")
             return
-
         self.mostrar_arbol_sintactico(texto)
-
-        # Crear tabla de símbolos
         self.tabla_simbolos = {}
         construir_tabla_simbolos(arbol_sintactico, self.tabla_simbolos)
-
-        # Pasar la tabla de símbolos al análisis semántico
         resultado_semantico = analizar_semantico(arbol_sintactico, self.tabla_simbolos)
-
-        # Mostrar la tabla de símbolos
         self.mostrar_tabla_simbolos()
-
-        # Mostrar resultados del análisis semántico
         self.mostrar_arbol_semantico(texto)
-
-        # Generar código
         code_gen = CodeGenerator()
         code_gen.generate_code(arbol_sintactico)
-        # Escribir el código generado en un archivo para la Máquina Tiny
         codigo_pcode = code_gen.write_code("output.pcode")
-        # Mostrar el código generado en la pestaña correspondiente
         self.texto_codigo.delete("1.0", tk.END)
         self.texto_codigo.insert(tk.END, codigo_pcode)
-
-        # **Ejecutar el código TM y mostrar el resultado**
-        self.ejecutar_tm_y_mostrar_resultado()
-
-        # Mensaje en la salida de compilación
         self.salida_compilacion.delete("1.0", tk.END)
-        self.salida_compilacion.insert(tk.END, "Compilación exitosa. Código generado y ejecutado.")
+        self.salida_compilacion.insert(tk.END, "Compilación exitosa. Código generado.")
+        self.iniciar_ejecucion_tm()
 
-    def ejecutar_tm_y_mostrar_resultado(self):
-        # Limpiar la sección de resultados y errores
+    def iniciar_ejecucion_tm(self):
         self.resultado_texto.delete("1.0", tk.END)
         self.error_texto.delete("1.0", tk.END)
-
-        # Definir el comando para ejecutar el TM
-        command = ['tm.exe', '../output.pcode']  # Ajusta la ruta y el nombre del ejecutable si es necesario
-
+        tm_exe = os.path.join(self.current_dir, 'tm.exe')
+        output_pcode = os.path.join(self.current_dir, '..', 'output.pcode')
+        if self.tm_process and self.tm_process.poll() is None:
+            self.tm_process.terminate()
         try:
-            # Ejecutar el comando con subprocess
-            process = subprocess.Popen(command,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE,
-                                       text=True)
+            self.tm_process = subprocess.Popen(
+                [tm_exe, output_pcode],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=0
+            )
+            threading.Thread(target=self.leer_salida_tm, daemon=True).start()
 
-            # Enviar el comando 'g' para iniciar la ejecución
-            output, error = process.communicate(input='g\n')
-
-            # Procesar la salida para extraer los valores impresos
-            out_lines = re.findall(r'OUT instruction prints:.*', output)
-            values = [line.split(':')[-1].strip() for line in out_lines]
-
-            # Mostrar los valores en la sección de resultados
-            for val in values:
-                self.resultado_texto.insert(tk.END, f"{val}\n")
-
-            # Mostrar errores si los hay
-            if error:
-                self.error_texto.insert(tk.END, error)
+            if self.tm_process.stdin:
+                self.tm_process.stdin.write("g\n")
+                self.tm_process.stdin.flush()
 
         except Exception as e:
-            self.error_texto.insert(tk.END, f"Error al ejecutar TM: {e}")
+            self.error_texto.insert(tk.END, f"Error al ejecutar TM: {e}\n")
+
+    def leer_salida_tm(self):
+        buffer = ""
+        while True:
+            char = self.tm_process.stdout.read(1)
+            if not char:
+                break
+            buffer += char
+            if char == '\n':
+                self.procesar_linea(buffer)
+                buffer = ""
+
+        if buffer:  # Procesar si queda algo sin salto de línea final
+            self.procesar_linea(buffer)
+
+    def procesar_linea(self, linea):
+        # Filtrar líneas no deseadas
+        if "Enter command:" in linea:
+            return
+        if "Executing instruction at address" in linea:
+            return
+        if "Enter command:" in linea:
+            return
+        # Mostrar el resto de la salida
+        linea_filtrada = linea.replace("Enter value (integer or float):", "Ingresa un valor: ")
+        self.root.after(0, self.actualizar_consola, linea_filtrada)
+
+    def enviar_comando_tm(self, event):
+        comando = self.consola_entrada.get()
+        if self.tm_process and self.tm_process.stdin:
+            self.tm_process.stdin.write(comando + "\n")
+            self.tm_process.stdin.flush()
+        self.consola_entrada.delete(0, tk.END)
+
+    def actualizar_consola(self, texto):
+        self.consola_salida.config(state="normal")
+        self.consola_salida.insert(tk.END, texto)
+        self.consola_salida.see(tk.END)
+        self.consola_salida.config(state="disabled")
 
     def mostrar_tokens_lexicos(self, texto):
         self.texto_lexico.delete("1.0", tk.END)
@@ -318,7 +329,7 @@ class IDE:
             for subnodo in nodo:
                 self.insertar_arbol_semantico(parent, subnodo)
         else:
-            if nodo != "None" and nodo != None:
+            if nodo != "None" and nodo is not None:
                 self.texto_semantico.insert(parent, "end", text=str(nodo))
 
     def limpiar_arbol_sintactico(self):
@@ -356,11 +367,9 @@ class IDE:
     def actualizar_numero_lineas(self, event=None):
         self.lineas.config(state='normal')
         self.lineas.delete('1.0', 'end')
-
         num_lineas = int(self.texto.index('end-1c').split('.')[0])
         for i in range(1, num_lineas + 1):
             self.lineas.insert(tk.END, f'{i}\n')
-
         self.lineas.config(state='disabled')
 
     def sync_scroll(self, *args):
