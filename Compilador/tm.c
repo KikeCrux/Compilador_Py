@@ -958,6 +958,9 @@ int doCommand(void)
 
 int main(int argc, char *argv[])
 {
+  // Deshabilitar el almacenamiento en búfer de la salida estándar
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   if (argc != 2)
   {
     printf("usage: %s <filename>\n", argv[0]);

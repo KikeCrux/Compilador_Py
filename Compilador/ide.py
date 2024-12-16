@@ -25,17 +25,9 @@ class IDE:
                               background='lightgrey', state='disabled', wrap='none')
         self.lineas.pack(side="left", fill="y")
 
-        #self.texto_scroll = tk.Scrollbar(frame_superior)
-        #self.texto_scroll.pack(side="right", fill="y")
-
         self.texto = tk.Text(frame_superior, wrap="none", yscrollcommand=self.sync_scroll, width=50, height=10)
         self.texto.pack(side="left", expand=True, fill="both")
         self.texto.bind("<KeyRelease>", self.on_key_release)
-
-        #self.texto_scroll.config(command=self.texto.yview)
-        #self.texto_scroll.config(command=self.sync_scroll)
-        #self.texto_scroll.bind("<MouseWheel>", self.on_scroll)
-        #self.texto.bind("<MouseWheel>", self.on_scroll)
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
@@ -136,10 +128,18 @@ class IDE:
         self.panel_consola = tk.Frame(self.pestanas)
         self.consola_salida = scrolledtext.ScrolledText(self.panel_consola, wrap="word", width=30, height=10, state="disabled")
         self.consola_salida.pack(expand=True, fill="both")
-        self.consola_entrada = tk.Entry(self.panel_consola)
-        self.consola_entrada.pack(fill="x")
+        
+        frame_consola_entrada = tk.Frame(self.panel_consola)
+        frame_consola_entrada.pack(fill="x")
+
+        self.label_ingresar = tk.Label(frame_consola_entrada, text="Ingresar valor:")
+        self.label_ingresar.pack(side="left", expand=True, fill="both")
+        
+        self.consola_entrada = tk.Entry(frame_consola_entrada)
+        self.consola_entrada.pack(side="right", expand=True, fill="both")
         self.consola_entrada.bind("<Return>", self.enviar_comando_tm)
         self.pestanas.add(self.panel_consola, text="Consola")
+        
 
         # Crear el Notebook
         notebook = ttk.Notebook(self.root)
@@ -171,11 +171,10 @@ class IDE:
 
         error_label = tk.Label(frame_errores, text="Salida de Errores")
         error_label.pack()
-
+        
         self.error_texto = tk.Text(frame_errores, wrap="word", height=10)
         self.error_texto.pack(expand=True, fill="both")
         self.crear_menu()
-        #self.crear_botones_acceso_rapido()
         self.actualizar_numero_lineas()
         self.resaltar_sintaxis()
 
@@ -196,22 +195,10 @@ class IDE:
         menubar.add_cascade(label="Archivo", menu=archivo_menu)
         menubar.add_cascade(label="Compilar", menu=compilar_menu)
 
-    """ def crear_botones_acceso_rapido(self):
-        toolbar = tk.Frame(self.root)
-        toolbar.pack(side="top", fill="x")
-
-        abrir_btn = tk.Button(toolbar, text="Abrir", command=self.abrir_archivo)
-        abrir_btn.pack(side="left", padx=2, pady=2)
-
-        guardar_btn = tk.Button(toolbar, text="Guardar", command=self.guardar_archivo)
-        guardar_btn.pack(side="left", padx=2, pady=2)
-
-        compilar_btn = tk.Button(toolbar, text="Compilar", command=self.compilar_archivo)
-        compilar_btn.pack(side="left", padx=2, pady=2) """
-
     def resaltar_sintaxis(self, event=None):
         self.texto.tag_remove("reservada", "1.0", tk.END)
         self.texto.tag_remove("string", "1.0", tk.END)
+        self.texto.tag_remove("simbolo", "1.0", tk.END)
         self.texto.tag_remove("comentario", "1.0", tk.END)
         palabras_reservadas = [
             "bool", "int", "char", "byte", "long", "double", "if", "else",
@@ -223,10 +210,12 @@ class IDE:
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
         patron_comentario = r'(//.*|/\*[\s\S]*?\*/)'
+        patron_simbolo = r'[\(\)\{\}\[\]\+\-\*\/\%\=\>\<\!\&\|\~\^\,\.\:\;]'
         self.texto.tag_configure("reservada", foreground="purple")
-        self.texto.tag_configure("string", foreground="pink")
-        self.texto.tag_configure("comentario", foreground="green")
+        self.texto.tag_configure("string", foreground="orange")
         self.texto.tag_configure("error", background="red")
+        self.texto.tag_configure("simbolo", foreground="blue")
+        self.texto.tag_configure("comentario", foreground="green")
         texto = self.texto.get("1.0", tk.END)
         for match in re.finditer(patron_palabras_reservadas, texto):
             start, end = match.span()
@@ -234,6 +223,9 @@ class IDE:
         for match in re.finditer(patron_string, texto):
             start, end = match.span()
             self.texto.tag_add("string", f"1.0+{start}c", f"1.0+{end}c")
+        for match in re.finditer(patron_simbolo, texto):
+            start, end = match.span()
+            self.texto.tag_add("simbolo", f"1.0+{start}c", f"1.0+{end}c")
         for match in re.finditer(patron_comentario, texto):
             start, end = match.span()
             self.texto.tag_add("comentario", f"1.0+{start}c", f"1.0+{end}c")
@@ -281,7 +273,7 @@ class IDE:
         self.texto_codigo.delete("1.0", tk.END)
         self.texto_codigo.insert(tk.END, codigo_pcode)
         self.salida_compilacion.delete("1.0", tk.END)
-        self.salida_compilacion.insert(tk.END, "Compilación exitosa. Código generado.")
+        self.salida_compilacion.insert(tk.END, "La compilación fue exitosa.\n")
         self.iniciar_ejecucion_tm()
 
     def iniciar_ejecucion_tm(self):
@@ -300,6 +292,9 @@ class IDE:
                 text=True,
                 bufsize=0
             )
+            self.consola_salida.config(state=tk.NORMAL)
+            self.consola_salida.delete("1.0", tk.END)
+            self.consola_salida.config(state=tk.DISABLED)
             threading.Thread(target=self.leer_salida_tm, daemon=True).start()
 
             if self.tm_process.stdin:
@@ -311,42 +306,78 @@ class IDE:
 
     def leer_salida_tm(self):
         buffer = ""
+        self.consola_entrada.delete(0, tk.END)
+        self.consola_entrada.focus()
+        
+        # Mostrar consola de entrada
+        self.consola_entrada.pack(side="bottom", fill="x")
+            
+        # Mostrar label de ingreso de valor
+        self.label_ingresar.pack(side="left", expand=True, fill="both")
+
         while True:
             char = self.tm_process.stdout.read(1)
-            if not char:
+            if not char:  # Salir cuando no haya más datos
                 break
             buffer += char
-            if char == '\n':
+            
+            if char == '\n':  # Procesar línea completa
                 self.procesar_linea(buffer)
                 buffer = ""
 
-        if buffer:  # Procesar si queda algo sin salto de línea final
+        if buffer:  # Procesar última línea si no termina con salto de línea
             self.procesar_linea(buffer)
-
+            
     def procesar_linea(self, linea):
-        # Filtrar líneas no deseadas
-        if "Enter command:" in linea:
-            return
-        if "Executing instruction at address" in linea:
-            return
-        if "Enter command:" in linea:
-            return
-        # Mostrar el resto de la salida
-        linea_filtrada = linea.replace("Enter value (integer or float):", "Ingresa un valor: ")
-        self.root.after(0, self.actualizar_consola, linea_filtrada)
+        self.consola_entrada.delete(0, tk.END)
+        self.consola_entrada.focus()
+        # Mostrar label de ingreso de valor
+        self.label_ingresar.pack(side="left", expand=True, fill="both")
+        
+        if "Enter value (integer or float):" in linea:
+            print(linea)
+            # linea = linea.replace("Enter value (integer or float):", "Ingresa un valor: ")
+            # linea = re.sub(r'Executing instruction at address\s+\d+:\s+ST\s+\d+,\d+\.\d+\(\d+\.\d+\)$', '', linea)
+            linea = ""
+            self.actualizar_consola_async(linea)
+            print(linea)
+        elif "OUT instruction prints:" in linea:
+            # Ocultar label de ingreso de valor
+            self.label_ingresar.pack_forget()
+        
+            linea = linea.replace("OUT instruction prints:", "Resultado: ")
+            self.actualizar_consola_async(linea)
+            print(linea)
+        elif "HALT encountered" in linea:
+            # Ocultar label de ingreso de valor
+            self.label_ingresar.pack_forget()
+            
+            # Ocultar consola de entrada
+            self.consola_entrada.pack_forget()
+            
+            self.consola_entrada.delete(0, tk.END)
+            self.actualizar_consola_async("Ejecución terminada\n")
+            self.actualizar_consola_async("--------------------\n")
+            print(linea)
 
+    def actualizar_consola_async(self, texto):
+        # Asegura que se actualice el widget desde el hilo principal
+        self.consola_salida.after(0, self.actualizar_consola, texto)
+    
     def enviar_comando_tm(self, event):
         comando = self.consola_entrada.get()
         if self.tm_process and self.tm_process.stdin:
-            self.tm_process.stdin.write(comando + "\n")
+            
+            self.actualizar_consola(f"{"Valor ingresado: " + comando}")
             self.tm_process.stdin.flush()
+            self.tm_process.stdin.write(comando + "\n")
         self.consola_entrada.delete(0, tk.END)
 
     def actualizar_consola(self, texto):
-        self.consola_salida.config(state="normal")
-        self.consola_salida.insert(tk.END, texto)
+        self.consola_salida.config(state=tk.NORMAL)
+        self.consola_salida.insert(tk.END, texto + "\n")
+        self.consola_salida.config(state=tk.DISABLED)
         self.consola_salida.see(tk.END)
-        self.consola_salida.config(state="disabled")
 
     def mostrar_tokens_lexicos(self, texto):
         # Limpiar Treeview anterior
