@@ -25,17 +25,17 @@ class IDE:
                               background='lightgrey', state='disabled', wrap='none')
         self.lineas.pack(side="left", fill="y")
 
-        self.texto_scroll = tk.Scrollbar(frame_superior)
-        self.texto_scroll.pack(side="right", fill="y")
+        #self.texto_scroll = tk.Scrollbar(frame_superior)
+        #self.texto_scroll.pack(side="right", fill="y")
 
         self.texto = tk.Text(frame_superior, wrap="none", yscrollcommand=self.sync_scroll, width=50, height=10)
         self.texto.pack(side="left", expand=True, fill="both")
         self.texto.bind("<KeyRelease>", self.on_key_release)
 
-        self.texto_scroll.config(command=self.texto.yview)
-        self.texto_scroll.config(command=self.sync_scroll)
-        self.texto_scroll.bind("<MouseWheel>", self.on_scroll)
-        self.texto.bind("<MouseWheel>", self.on_scroll)
+        #self.texto_scroll.config(command=self.texto.yview)
+        #self.texto_scroll.config(command=self.sync_scroll)
+        #self.texto_scroll.bind("<MouseWheel>", self.on_scroll)
+        #self.texto.bind("<MouseWheel>", self.on_scroll)
 
         self.pestanas = ttk.Notebook(frame_superior)
         self.pestanas.pack(side="right", expand=True, fill="both")
@@ -73,29 +73,41 @@ class IDE:
         self.consola_entrada.bind("<Return>", self.enviar_comando_tm)
         self.pestanas.add(self.panel_consola, text="Consola")
 
-        frame_inferior = tk.Frame(self.root)
-        frame_inferior.pack(side="bottom", fill="both", expand=True)
+        # Crear el Notebook
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(expand=True, fill="both")
 
-        salida_compilador = tk.Label(frame_inferior, text="Salida de Compilación")
+        # Pestaña 1: Salida de Compilación
+        frame_compilacion = tk.Frame(notebook)
+        notebook.add(frame_compilacion, text="Salida de Compilación")
+
+        salida_compilador = tk.Label(frame_compilacion, text="Salida de Compilación")
         salida_compilador.pack()
 
-        self.salida_compilacion = tk.Text(frame_inferior, wrap="word", height=5)
+        self.salida_compilacion = tk.Text(frame_compilacion, wrap="word", height=10)
         self.salida_compilacion.pack(expand=True, fill="both")
 
-        resultado_error = tk.Label(frame_inferior, text="Resultado del Programa")
-        resultado_error.pack()
+        # Pestaña 2: Resultado del Programa
+        frame_resultado = tk.Frame(notebook)
+        notebook.add(frame_resultado, text="Resultado del Programa")
 
-        self.resultado_texto = tk.Text(frame_inferior, wrap="word", height=5)
+        resultado_label = tk.Label(frame_resultado, text="Resultado del Programa")
+        resultado_label.pack()
+
+        self.resultado_texto = tk.Text(frame_resultado, wrap="word", height=10)
         self.resultado_texto.pack(expand=True, fill="both")
 
-        error_label = tk.Label(frame_inferior, text="Salida de Errores")
+        # Pestaña 3: Salida de Errores
+        frame_errores = tk.Frame(notebook)
+        notebook.add(frame_errores, text="Salida de Errores")
+
+        error_label = tk.Label(frame_errores, text="Salida de Errores")
         error_label.pack()
 
-        self.error_texto = tk.Text(frame_inferior, wrap="word", height=5)
+        self.error_texto = tk.Text(frame_errores, wrap="word", height=10)
         self.error_texto.pack(expand=True, fill="both")
-
         self.crear_menu()
-        self.crear_botones_acceso_rapido()
+        #self.crear_botones_acceso_rapido()
         self.actualizar_numero_lineas()
         self.resaltar_sintaxis()
 
@@ -116,7 +128,7 @@ class IDE:
         menubar.add_cascade(label="Archivo", menu=archivo_menu)
         menubar.add_cascade(label="Compilar", menu=compilar_menu)
 
-    def crear_botones_acceso_rapido(self):
+    """ def crear_botones_acceso_rapido(self):
         toolbar = tk.Frame(self.root)
         toolbar.pack(side="top", fill="x")
 
@@ -127,7 +139,7 @@ class IDE:
         guardar_btn.pack(side="left", padx=2, pady=2)
 
         compilar_btn = tk.Button(toolbar, text="Compilar", command=self.compilar_archivo)
-        compilar_btn.pack(side="left", padx=2, pady=2)
+        compilar_btn.pack(side="left", padx=2, pady=2) """
 
     def resaltar_sintaxis(self, event=None):
         self.texto.tag_remove("reservada", "1.0", tk.END)
