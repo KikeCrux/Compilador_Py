@@ -1,0 +1,24 @@
+main {
+    int N, num, i, mayor, menor;
+
+    read N;        // Leer cantidad de números
+    read num;      // Leer primer número
+    mayor = num;   // Inicializar mayor y menor con el primer número
+    menor = num;
+
+    i = 2;         // Empezar desde el segundo número
+
+    while (i <= N) {
+        read num;  // Leer siguiente número
+
+        if (num > mayor) then {
+            mayor = num;  // Actualizar mayor
+        } fi
+
+        if (num < menor) then {
+            menor = num;  // Actualizar menor
+        } fi
+
+        i = i + 1;  // Incrementar contador
+    }
+}

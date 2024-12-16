@@ -13,7 +13,7 @@ from tkinter import simpledialog
 class IDE:
     def __init__(self, root):
         self.root = root
-        self.root.title("Compilador chafa")
+        self.root.title("Compilador")
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self.tabla_simbolos = {}
         self.tm_process = None
@@ -41,23 +41,91 @@ class IDE:
         self.pestanas.pack(side="right", expand=True, fill="both")
 
         self.panel_lexico = tk.Frame(self.pestanas)
-        self.texto_lexico = scrolledtext.ScrolledText(self.panel_lexico, wrap="word", width=30, height=10)
+
+        # Scrollbar vertical
+        scrollbar_lexico_y = ttk.Scrollbar(self.panel_lexico, orient="vertical")
+        scrollbar_lexico_y.pack(side="right", fill="y")
+
+        # Scrollbar horizontal (opcional)
+        scrollbar_lexico_x = ttk.Scrollbar(self.panel_lexico, orient="horizontal")
+        scrollbar_lexico_x.pack(side="bottom", fill="x")
+
+        self.texto_lexico = ttk.Treeview(self.panel_lexico, 
+                                        columns=("Clave", "Lexema", "Fila", "Columna"), 
+                                        show="headings", 
+                                        yscrollcommand=scrollbar_lexico_y.set,
+                                        xscrollcommand=scrollbar_lexico_x.set)
+        self.texto_lexico.heading("Clave", text="Clave")
+        self.texto_lexico.heading("Lexema", text="Lexema")
+        self.texto_lexico.heading("Fila", text="Fila")
+        self.texto_lexico.heading("Columna", text="Columna")
+
+
         self.texto_lexico.pack(expand=True, fill="both")
+
+        # Configurar las scrollbars para controlar el treeview
+        scrollbar_lexico_y.config(command=self.texto_lexico.yview)
+        scrollbar_lexico_x.config(command=self.texto_lexico.xview)
+
         self.pestanas.add(self.panel_lexico, text="Léxico")
 
         self.panel_sintactico = tk.Frame(self.pestanas)
-        self.texto_sintactico = ttk.Treeview(self.panel_sintactico)
+
+        scrollbar_sint_y = ttk.Scrollbar(self.panel_sintactico, orient="vertical")
+        scrollbar_sint_y.pack(side="right", fill="y")
+
+        scrollbar_sint_x = ttk.Scrollbar(self.panel_sintactico, orient="horizontal")
+        scrollbar_sint_x.pack(side="bottom", fill="x")
+
+        self.texto_sintactico = ttk.Treeview(self.panel_sintactico,
+                                            yscrollcommand=scrollbar_sint_y.set,
+                                            xscrollcommand=scrollbar_sint_x.set)
         self.texto_sintactico.pack(expand=True, fill="both")
+
+        scrollbar_sint_y.config(command=self.texto_sintactico.yview)
+        scrollbar_sint_x.config(command=self.texto_sintactico.xview)
+
         self.pestanas.add(self.panel_sintactico, text="Sintáctico")
 
         self.panel_semantico = tk.Frame(self.pestanas)
-        self.texto_semantico = ttk.Treeview(self.panel_semantico)
+
+        scrollbar_sem_y = ttk.Scrollbar(self.panel_semantico, orient="vertical")
+        scrollbar_sem_y.pack(side="right", fill="y")
+
+        scrollbar_sem_x = ttk.Scrollbar(self.panel_semantico, orient="horizontal")
+        scrollbar_sem_x.pack(side="bottom", fill="x")
+
+        self.texto_semantico = ttk.Treeview(self.panel_semantico,
+                                            yscrollcommand=scrollbar_sem_y.set,
+                                            xscrollcommand=scrollbar_sem_x.set)
         self.texto_semantico.pack(expand=True, fill="both")
+
+        scrollbar_sem_y.config(command=self.texto_semantico.yview)
+        scrollbar_sem_x.config(command=self.texto_semantico.xview)
+
         self.pestanas.add(self.panel_semantico, text="Semántico")
 
         self.panel_simbolos = tk.Frame(self.pestanas)
-        self.texto_simbolos = scrolledtext.ScrolledText(self.panel_simbolos, wrap="word", width=30, height=10)
+
+        scrollbar_sym_y = ttk.Scrollbar(self.panel_simbolos, orient="vertical")
+        scrollbar_sym_y.pack(side="right", fill="y")
+
+        scrollbar_sym_x = ttk.Scrollbar(self.panel_simbolos, orient="horizontal")
+        scrollbar_sym_x.pack(side="bottom", fill="x")
+
+        self.texto_simbolos = ttk.Treeview(self.panel_simbolos, columns=("Variable", "Tipo", "Líneas"), 
+                                        show="headings",
+                                        yscrollcommand=scrollbar_sym_y.set,
+                                        xscrollcommand=scrollbar_sym_x.set)
+        self.texto_simbolos.heading("Variable", text="Variable")
+        self.texto_simbolos.heading("Tipo", text="Tipo")
+        self.texto_simbolos.heading("Líneas", text="Líneas")
+
         self.texto_simbolos.pack(expand=True, fill="both")
+
+        scrollbar_sym_y.config(command=self.texto_simbolos.yview)
+        scrollbar_sym_x.config(command=self.texto_simbolos.xview)
+
         self.pestanas.add(self.panel_simbolos, text="Tabla de Símbolos")
 
         self.panel_codigo = tk.Frame(self.pestanas)
@@ -155,10 +223,10 @@ class IDE:
         patron_palabras_reservadas = r'\b(?:' + '|'.join(palabras_reservadas) + r')\b'
         patron_string = r'\"([^\\\n]|(\\.))*?\"'
         patron_comentario = r'(//.*|/\*[\s\S]*?\*/)'
-        self.texto.tag_configure("reservada", foreground="blue")
-        self.texto.tag_configure("string", foreground="red")
+        self.texto.tag_configure("reservada", foreground="purple")
+        self.texto.tag_configure("string", foreground="pink")
         self.texto.tag_configure("comentario", foreground="green")
-        self.texto.tag_configure("error", background="yellow")
+        self.texto.tag_configure("error", background="red")
         texto = self.texto.get("1.0", tk.END)
         for match in re.finditer(patron_palabras_reservadas, texto):
             start, end = match.span()
@@ -281,17 +349,23 @@ class IDE:
         self.consola_salida.config(state="disabled")
 
     def mostrar_tokens_lexicos(self, texto):
-        self.texto_lexico.delete("1.0", tk.END)
+        # Limpiar Treeview anterior
+        for row in self.texto_lexico.get_children():
+            self.texto_lexico.delete(row)
+
+        # Obtener tokens
         tokens = analizar_lexico(texto)
-        self.texto_lexico.insert(tk.END, f"{'Clave':<12} {'Lexema':<12} {'Fila':<5} {'Columna':<10}\n")
-        self.texto_lexico.insert(tk.END, f"{'-'*45}\n")
+
+        # Insertar datos en el Treeview
         for token in tokens:
             lexema = str(token.value)
             fila = token.lineno
             columna = "N/A"
             if hasattr(token, 'column'):
                 columna = token.column
-            self.texto_lexico.insert(tk.END, f"{token.type:<12} {lexema:<12} {fila:<5} {columna:<5}\n")
+
+            self.texto_lexico.insert("", "end", values=(token.type, lexema, fila, columna))
+
 
     def mostrar_arbol_sintactico(self, texto):
         self.error_texto.delete("1.0", tk.END)
@@ -312,9 +386,15 @@ class IDE:
             self.error_texto.insert(tk.END, str(e))
 
     def mostrar_tabla_simbolos(self):
-        self.texto_simbolos.delete("1.0", tk.END)
+        # Limpiar el contenido anterior del Treeview
+        for row in self.texto_simbolos.get_children():
+            self.texto_simbolos.delete(row)
+
+        # Insertar los símbolos en el Treeview
         for var, info in self.tabla_simbolos.items():
-            self.texto_simbolos.insert(tk.END, f"Variable: {var} | Tipo: {info['tipo']} | Línea(s): {str(info['lineas'])}\n")
+            tipo = info['tipo']
+            lineas = ", ".join(map(str, info['lineas']))  # Convertir lista de líneas a cadena
+            self.texto_simbolos.insert("", "end", values=(var, tipo, lineas))
 
     def mostrar_arbol_semantico(self, texto):
         self.limpiar_arbol_semantico()
